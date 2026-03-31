@@ -12,4 +12,3 @@ artifacts/models/
 artifacts/results/*.json
 artifacts/results/*.jsonl
 artifacts/results/*.tsv
-results.tsv

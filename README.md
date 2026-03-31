@@ -50,6 +50,8 @@ uv run python -m arxiv_cslg_search.cli benchmark sample-review --count 4
 uv run python -m arxiv_cslg_search.cli index build
 uv run python -m arxiv_cslg_search.cli eval baseline
 uv run python -m arxiv_cslg_search.cli search "few-shot classification" --top-k 3
+uv run python -m arxiv_cslg_search.cli train --config configs/train.yaml
+uv run python -m arxiv_cslg_search.cli eval compare --model latest --record-results
 ```
 
 ## Constraints

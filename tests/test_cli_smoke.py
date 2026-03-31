@@ -16,8 +16,10 @@ def test_help_renders(capsys: pytest.CaptureFixture[str]) -> None:
     assert "search" in output
 
 
-def test_search_placeholder_fails_cleanly() -> None:
-    with pytest.raises(SystemExit) as exc:
-        cli.main(["search", "test query"])
-
-    assert str(exc.value).startswith("Missing retrieval artifacts:")
+def test_search_parser_accepts_arguments() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["search", "test query", "--top-k", "3", "--format", "json"])
+    assert args.command == "search"
+    assert args.query == "test query"
+    assert args.top_k == 3
+    assert args.format == "json"

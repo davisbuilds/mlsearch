@@ -1,0 +1,2 @@
+timestamp	model_ref	recall@10	mrr	ndcg@10	status	description
+2026-03-31T11:51:54Z	retriever-20260331T115143Z	1.000000	1.000000	1.000000	discard	local fine-tuned compare run

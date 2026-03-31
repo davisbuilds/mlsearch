@@ -30,9 +30,21 @@ class BenchmarkConfig:
 
 
 @dataclass(frozen=True)
+class TrainConfig:
+    base_model_name: str = "BAAI/bge-small-en-v1.5"
+    num_epochs: int = 1
+    batch_size: int = 8
+    learning_rate: float = 2e-5
+    warmup_ratio: float = 0.1
+    max_examples: int = 5000
+    run_name_prefix: str = "retriever"
+
+
+@dataclass(frozen=True)
 class RuntimeConfig:
     corpus: CorpusConfig = CorpusConfig()
     benchmark: BenchmarkConfig = BenchmarkConfig()
+    train: TrainConfig = TrainConfig()
 
 
 RUNTIME_CONFIG = RuntimeConfig()
@@ -70,6 +82,17 @@ def load_benchmark_config(path: Path) -> BenchmarkConfig:
         raise ValueError(f"Unknown benchmark config keys: {names}")
     merged = {**defaults, **raw}
     return BenchmarkConfig(**merged)
+
+
+def load_train_config(path: Path) -> TrainConfig:
+    raw = load_yaml(path)
+    defaults = asdict(TrainConfig())
+    unknown = sorted(set(raw) - set(defaults))
+    if unknown:
+        names = ", ".join(unknown)
+        raise ValueError(f"Unknown train config keys: {names}")
+    merged = {**defaults, **raw}
+    return TrainConfig(**merged)
 
 
 def _normalize_date_value(value: Any) -> str:

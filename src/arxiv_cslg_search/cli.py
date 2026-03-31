@@ -79,13 +79,13 @@ def _add_eval_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
         action="store_true",
         help="Append the comparison outcome to results.tsv.",
     )
-    compare.set_defaults(handler=_placeholder_handler("eval compare"))
+    compare.set_defaults(handler=_handle_eval_compare)
 
 
 def _add_train_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = subparsers.add_parser("train", help="Train a local retriever.")
     parser.add_argument("--config", default="configs/train.yaml", help="Training config path.")
-    parser.set_defaults(handler=_placeholder_handler("train"))
+    parser.set_defaults(handler=_handle_train)
 
 
 def _add_search_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -153,6 +153,22 @@ def _handle_eval_baseline(_: argparse.Namespace) -> int:
         report = run_baseline_eval()
     except FileNotFoundError as exc:
         raise SystemExit(f"Missing retrieval artifacts: {exc}") from exc
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_eval_compare(args: argparse.Namespace) -> int:
+    from arxiv_cslg_search.eval.run_eval import run_compare_eval
+
+    report = run_compare_eval(model_ref=args.model, record_results=args.record_results)
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_train(args: argparse.Namespace) -> int:
+    from arxiv_cslg_search.training.train_retriever import train_retriever
+
+    report = train_retriever(config_path=PATHS.root / args.config)
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
     return 0
 
