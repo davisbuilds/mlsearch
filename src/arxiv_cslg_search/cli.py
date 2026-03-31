@@ -6,6 +6,8 @@ from typing import Callable
 
 from arxiv_cslg_search.paths import PATHS
 from arxiv_cslg_search.pipelines.build_corpus import build_corpus
+from arxiv_cslg_search.pipelines.generate_queries import generate_queries
+from arxiv_cslg_search.pipelines.sample_review_set import sample_review_set
 from arxiv_cslg_search.pipelines.validate_corpus import validate_corpus
 
 
@@ -43,11 +45,11 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
     nested = parser.add_subparsers(dest="benchmark_command", required=True)
 
     generate = nested.add_parser("generate", help="Generate synthetic benchmark queries.")
-    generate.set_defaults(handler=_placeholder_handler("benchmark generate"))
+    generate.set_defaults(handler=_handle_benchmark_generate)
 
     review = nested.add_parser("sample-review", help="Sample queries for manual review.")
     review.add_argument("--count", type=int, default=30, help="Review sample size.")
-    review.set_defaults(handler=_placeholder_handler("benchmark sample-review"))
+    review.set_defaults(handler=_handle_benchmark_sample_review)
 
 
 def _add_index_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -55,7 +57,12 @@ def _add_index_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
     nested = parser.add_subparsers(dest="index_command", required=True)
 
     build = nested.add_parser("build", help="Build the local retrieval index.")
-    build.set_defaults(handler=_placeholder_handler("index build"))
+    build.add_argument(
+        "--model",
+        default="BAAI/bge-small-en-v1.5",
+        help="Sentence-transformer model name.",
+    )
+    build.set_defaults(handler=_handle_index_build)
 
 
 def _add_eval_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -63,7 +70,7 @@ def _add_eval_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
     nested = parser.add_subparsers(dest="eval_command", required=True)
 
     baseline = nested.add_parser("baseline", help="Run the zero-shot baseline evaluation.")
-    baseline.set_defaults(handler=_placeholder_handler("eval baseline"))
+    baseline.set_defaults(handler=_handle_eval_baseline)
 
     compare = nested.add_parser("compare", help="Compare a trained model to baseline.")
     compare.add_argument("--model", default="latest", help="Model checkpoint alias.")
@@ -91,7 +98,7 @@ def _add_search_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentP
         choices=("table", "json"),
         help="Output format.",
     )
-    parser.set_defaults(handler=_placeholder_handler("search"))
+    parser.set_defaults(handler=_handle_search)
 
 
 def _placeholder_handler(name: str) -> Callable[[argparse.Namespace], int]:
@@ -114,6 +121,52 @@ def _handle_corpus_validate(_: argparse.Namespace) -> int:
     report = validate_corpus(config_path=PATHS.configs / "corpus.yaml")
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
     return 0 if report.valid else 1
+
+
+def _handle_benchmark_generate(_: argparse.Namespace) -> int:
+    report = generate_queries(config_path=PATHS.configs / "benchmark.yaml")
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_benchmark_sample_review(args: argparse.Namespace) -> int:
+    report = sample_review_set(
+        config_path=PATHS.configs / "benchmark.yaml",
+        count=args.count,
+    )
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_index_build(args: argparse.Namespace) -> int:
+    from arxiv_cslg_search.retrieval.index import build_index
+
+    report = build_index(model_name=args.model)
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_eval_baseline(_: argparse.Namespace) -> int:
+    from arxiv_cslg_search.eval.run_eval import run_baseline_eval
+
+    try:
+        report = run_baseline_eval()
+    except FileNotFoundError as exc:
+        raise SystemExit(f"Missing retrieval artifacts: {exc}") from exc
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_search(args: argparse.Namespace) -> int:
+    from arxiv_cslg_search.present.search_output import render_hits
+    from arxiv_cslg_search.retrieval.search import search_index
+
+    try:
+        hits = search_index(args.query, top_k=args.top_k)
+    except FileNotFoundError as exc:
+        raise SystemExit(f"Missing retrieval artifacts: {exc}") from exc
+    print(render_hits(hits, output_format=args.format))
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:

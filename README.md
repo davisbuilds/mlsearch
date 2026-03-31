@@ -45,6 +45,11 @@ Current working slice:
 uv sync
 uv run python -m arxiv_cslg_search.cli corpus build --limit 10
 uv run python -m arxiv_cslg_search.cli corpus validate
+uv run python -m arxiv_cslg_search.cli benchmark generate
+uv run python -m arxiv_cslg_search.cli benchmark sample-review --count 4
+uv run python -m arxiv_cslg_search.cli index build
+uv run python -m arxiv_cslg_search.cli eval baseline
+uv run python -m arxiv_cslg_search.cli search "few-shot classification" --top-k 3
 ```
 
 ## Constraints

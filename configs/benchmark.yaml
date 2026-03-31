@@ -1,0 +1,6 @@
+review_count_default: 30
+keyword_queries_per_paper: 1
+question_queries_per_paper: 1
+negatives_per_query: 3
+max_candidates: 2000
+seed: 42

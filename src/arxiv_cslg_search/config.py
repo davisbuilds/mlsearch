@@ -22,6 +22,11 @@ class CorpusConfig:
 @dataclass(frozen=True)
 class BenchmarkConfig:
     review_count_default: int = 30
+    keyword_queries_per_paper: int = 1
+    question_queries_per_paper: int = 1
+    negatives_per_query: int = 3
+    max_candidates: int = 2000
+    seed: int = 42
 
 
 @dataclass(frozen=True)
@@ -54,6 +59,17 @@ def load_corpus_config(path: Path) -> CorpusConfig:
     merged["start_date"] = _normalize_date_value(merged["start_date"])
     merged["end_date"] = _normalize_date_value(merged["end_date"])
     return CorpusConfig(**merged)
+
+
+def load_benchmark_config(path: Path) -> BenchmarkConfig:
+    raw = load_yaml(path)
+    defaults = asdict(BenchmarkConfig())
+    unknown = sorted(set(raw) - set(defaults))
+    if unknown:
+        names = ", ".join(unknown)
+        raise ValueError(f"Unknown benchmark config keys: {names}")
+    merged = {**defaults, **raw}
+    return BenchmarkConfig(**merged)
 
 
 def _normalize_date_value(value: Any) -> str:

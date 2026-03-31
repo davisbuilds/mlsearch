@@ -15,6 +15,8 @@ class ProjectPaths:
     data_processed: Path
     data_benchmark: Path
     artifacts: Path
+    artifacts_index: Path
+    artifacts_models: Path
     artifacts_results: Path
     plans: Path
 
@@ -31,6 +33,8 @@ class ProjectPaths:
             data_processed=root / "data" / "processed",
             data_benchmark=root / "data" / "benchmark",
             artifacts=root / "artifacts",
+            artifacts_index=root / "artifacts" / "index",
+            artifacts_models=root / "artifacts" / "models",
             artifacts_results=root / "artifacts" / "results",
             plans=root / "docs" / "plans",
         )

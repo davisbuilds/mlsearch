@@ -20,4 +20,4 @@ def test_search_placeholder_fails_cleanly() -> None:
     with pytest.raises(SystemExit) as exc:
         cli.main(["search", "test query"])
 
-    assert str(exc.value) == "search is not implemented yet."
+    assert str(exc.value).startswith("Missing retrieval artifacts:")
