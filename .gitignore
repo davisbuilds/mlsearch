@@ -1,0 +1,12 @@
+.DS_Store
+.pytest_cache/
+.venv/
+__pycache__/
+*.pyc
+artifacts/
+data/raw/
+data/processed/
+data/benchmark/generated/
+data/benchmark/reviewed/
+data/index/
+results.tsv
