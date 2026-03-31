@@ -29,9 +29,11 @@ Each query candidate carries:
 ## Review Workflow
 
 1. Run `benchmark sample-review` to export a stratified CSV sample.
-2. Edit the CSV and set each row to `accept`, `edit`, or `reject`.
-3. For `edit`, fill in both `edited_query` and `relevant_paper_ids`.
-4. Run `benchmark finalize-review` to materialize the canonical held-out eval split.
+2. Run `benchmark review-stats` to see pending and completed counts by status and style.
+3. Run `benchmark review-next` to inspect the next pending row with source-paper context.
+4. Edit the CSV and set each row to `accept`, `edit`, or `reject`.
+5. For `edit`, fill in both `edited_query` and `relevant_paper_ids`.
+6. Run `benchmark finalize-review` to materialize the canonical held-out eval split.
 
 The finalized JSONL is the only reviewed artifact used by `eval baseline` and `eval compare`.
 

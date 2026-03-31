@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from arxiv_cslg_search.benchmark.schema import QueryCandidate, ReviewedQuery
+from arxiv_cslg_search.data.models import ArxivPaper
+from arxiv_cslg_search.pipelines.validate_corpus import load_corpus
 
 
 REVIEW_COLUMNS = [
@@ -55,6 +57,26 @@ class FinalizeReviewReport:
     accepted_count: int
     rejected_count: int
     styles: dict[str, int]
+
+
+@dataclass(frozen=True)
+class ReviewStatsReport:
+    review_path: str
+    total_count: int
+    pending_count: int
+    completed_count: int
+    status_counts: dict[str, int]
+    style_counts: dict[str, int]
+
+
+@dataclass(frozen=True)
+class ReviewNextReport:
+    review_path: str
+    query_id: str
+    review_row: dict[str, str]
+    source_paper: dict[str, object]
+    positive_papers: list[dict[str, object]]
+    hard_negative_papers: list[dict[str, object]]
 
 
 def finalize_review_csv(
@@ -117,6 +139,60 @@ def load_review_decisions(review_path: Path) -> list[ReviewedQuery]:
     return reviewed_queries
 
 
+def summarize_review_progress(review_path: Path) -> ReviewStatsReport:
+    rows = load_review_rows(review_path)
+    status_counts: dict[str, int] = defaultdict(int)
+    style_counts: dict[str, int] = defaultdict(int)
+    pending_count = 0
+    for row in rows:
+        status = _normalize_review_status(row.get("review_status", ""))
+        style = (row.get("style") or "").strip()
+        status_counts[status] += 1
+        if style:
+            style_counts[style] += 1
+        if status == "pending":
+            pending_count += 1
+    return ReviewStatsReport(
+        review_path=str(review_path),
+        total_count=len(rows),
+        pending_count=pending_count,
+        completed_count=len(rows) - pending_count,
+        status_counts=dict(sorted(status_counts.items())),
+        style_counts=dict(sorted(style_counts.items())),
+    )
+
+
+def load_next_review_item(
+    *,
+    review_path: Path,
+    corpus_path: Path,
+    query_id: str | None = None,
+) -> ReviewNextReport:
+    rows = load_review_rows(review_path)
+    row = _select_review_row(rows, query_id=query_id)
+    papers_by_id = {paper.arxiv_id: paper for paper in load_corpus(corpus_path)}
+    source_paper_id = _required_value(row, "source_paper_id")
+    source_paper = _paper_payload(papers_by_id[source_paper_id])
+    positive_papers = _resolve_papers(_split_pipe_values(row.get("positive_ids", "")), papers_by_id)
+    hard_negative_papers = _resolve_papers(_split_pipe_values(row.get("hard_negative_ids", "")), papers_by_id)
+    return ReviewNextReport(
+        review_path=str(review_path),
+        query_id=_required_value(row, "query_id"),
+        review_row={key: (value or "") for key, value in row.items()},
+        source_paper=source_paper,
+        positive_papers=positive_papers,
+        hard_negative_papers=hard_negative_papers,
+    )
+
+
+def load_review_rows(review_path: Path) -> list[dict[str, str]]:
+    if not review_path.exists():
+        raise FileNotFoundError(f"Review CSV not found: {review_path}")
+    with review_path.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        return [{key: (value or "") for key, value in row.items()} for row in reader]
+
+
 def _row_to_reviewed_query(
     row: dict[str, str | None],
     *,
@@ -128,7 +204,7 @@ def _row_to_reviewed_query(
     style = _required_value(row, "style")
     source_paper_id = _required_value(row, "source_paper_id")
     positive_ids = _split_pipe_values(row.get("positive_ids", ""))
-    review_status = _required_value(row, "review_status").strip().lower()
+    review_status = _normalize_review_status(_required_value(row, "review_status"))
 
     if review_status not in FINAL_REVIEW_STATUSES:
         allowed = ", ".join(sorted(FINAL_REVIEW_STATUSES))
@@ -178,6 +254,42 @@ def _required_value(row: dict[str, str | None], key: str) -> str:
 
 def _split_pipe_values(value: str | None) -> list[str]:
     return [item.strip() for item in (value or "").split("|") if item.strip()]
+
+
+def _normalize_review_status(value: str | None) -> str:
+    return (value or "").strip().lower()
+
+
+def _select_review_row(rows: list[dict[str, str]], *, query_id: str | None) -> dict[str, str]:
+    if query_id is not None:
+        for row in rows:
+            if row.get("query_id") == query_id:
+                return row
+        raise ValueError(f"Review row not found for query_id {query_id!r}")
+    for row in rows:
+        if _normalize_review_status(row.get("review_status")) == "pending":
+            return row
+    raise ValueError("No pending review rows found")
+
+
+def _resolve_papers(ids: list[str], papers_by_id: dict[str, ArxivPaper]) -> list[dict[str, object]]:
+    resolved: list[dict[str, object]] = []
+    for paper_id in ids:
+        paper = papers_by_id.get(paper_id)
+        if paper is None:
+            continue
+        resolved.append(_paper_payload(paper))
+    return resolved
+
+
+def _paper_payload(paper: ArxivPaper) -> dict[str, object]:
+    return {
+        "arxiv_id": paper.arxiv_id,
+        "title": paper.title,
+        "abstract": paper.abstract,
+        "published": paper.published,
+        "categories": list(paper.categories),
+    }
 
 
 def _count_rejected_rows(review_path: Path) -> int:

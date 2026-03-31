@@ -31,3 +31,29 @@ def test_benchmark_finalize_review_parser_accepts_input_override() -> None:
     assert args.command == "benchmark"
     assert args.benchmark_command == "finalize-review"
     assert args.input == "data/benchmark/reviewed/review_sample.csv"
+
+
+def test_benchmark_review_stats_parser_accepts_input_override() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["benchmark", "review-stats", "--input", "data/benchmark/reviewed/review_sample.csv"])
+    assert args.command == "benchmark"
+    assert args.benchmark_command == "review-stats"
+    assert args.input == "data/benchmark/reviewed/review_sample.csv"
+
+
+def test_benchmark_review_next_parser_accepts_query_id_override() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(
+        [
+            "benchmark",
+            "review-next",
+            "--input",
+            "data/benchmark/reviewed/review_sample.csv",
+            "--query-id",
+            "paper-1-question",
+        ]
+    )
+    assert args.command == "benchmark"
+    assert args.benchmark_command == "review-next"
+    assert args.input == "data/benchmark/reviewed/review_sample.csv"
+    assert args.query_id == "paper-1-question"

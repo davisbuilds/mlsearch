@@ -39,6 +39,11 @@ Planned subcommands:
 - `train`
 - `search`
 
+Review-specific helpers:
+
+- `benchmark review-stats`
+- `benchmark review-next`
+
 Current working slice:
 
 ```bash
@@ -47,6 +52,8 @@ uv run python -m arxiv_cslg_search.cli corpus build --limit 10
 uv run python -m arxiv_cslg_search.cli corpus validate
 uv run python -m arxiv_cslg_search.cli benchmark generate
 uv run python -m arxiv_cslg_search.cli benchmark sample-review --count 4
+uv run python -m arxiv_cslg_search.cli benchmark review-stats
+uv run python -m arxiv_cslg_search.cli benchmark review-next
 # edit data/benchmark/reviewed/review_sample.csv and set review_status to accept/edit/reject
 uv run python -m arxiv_cslg_search.cli benchmark finalize-review
 uv run python -m arxiv_cslg_search.cli index build
