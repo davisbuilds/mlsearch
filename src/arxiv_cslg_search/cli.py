@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 from typing import Callable
+
+from arxiv_cslg_search.paths import PATHS
+from arxiv_cslg_search.pipelines.build_corpus import build_corpus
+from arxiv_cslg_search.pipelines.validate_corpus import validate_corpus
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -27,10 +32,10 @@ def _add_corpus_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentP
 
     build = nested.add_parser("build", help="Build the local cs.LG corpus.")
     build.add_argument("--limit", type=int, default=5000, help="Target paper count.")
-    build.set_defaults(handler=_placeholder_handler("corpus build"))
+    build.set_defaults(handler=_handle_corpus_build)
 
     validate = nested.add_parser("validate", help="Validate the local corpus artifact.")
-    validate.set_defaults(handler=_placeholder_handler("corpus validate"))
+    validate.set_defaults(handler=_handle_corpus_validate)
 
 
 def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -94,6 +99,21 @@ def _placeholder_handler(name: str) -> Callable[[argparse.Namespace], int]:
         raise SystemExit(f"{name} is not implemented yet.")
 
     return handler
+
+
+def _handle_corpus_build(args: argparse.Namespace) -> int:
+    report = build_corpus(
+        config_path=PATHS.configs / "corpus.yaml",
+        limit_override=args.limit,
+    )
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_corpus_validate(_: argparse.Namespace) -> int:
+    report = validate_corpus(config_path=PATHS.configs / "corpus.yaml")
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0 if report.valid else 1
 
 
 def main(argv: list[str] | None = None) -> int:

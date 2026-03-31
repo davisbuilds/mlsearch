@@ -11,7 +11,11 @@ class ProjectPaths:
     configs: Path
     docs: Path
     data: Path
+    data_raw: Path
+    data_processed: Path
+    data_benchmark: Path
     artifacts: Path
+    artifacts_results: Path
     plans: Path
 
     @classmethod
@@ -23,7 +27,11 @@ class ProjectPaths:
             configs=root / "configs",
             docs=root / "docs",
             data=root / "data",
+            data_raw=root / "data" / "raw",
+            data_processed=root / "data" / "processed",
+            data_benchmark=root / "data" / "benchmark",
             artifacts=root / "artifacts",
+            artifacts_results=root / "artifacts" / "results",
             plans=root / "docs" / "plans",
         )
 

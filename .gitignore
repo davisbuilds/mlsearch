@@ -3,10 +3,13 @@
 .venv/
 __pycache__/
 *.pyc
-artifacts/
 data/raw/
 data/processed/
 data/benchmark/generated/
 data/benchmark/reviewed/
-data/index/
+artifacts/index/
+artifacts/models/
+artifacts/results/*.json
+artifacts/results/*.jsonl
+artifacts/results/*.tsv
 results.tsv

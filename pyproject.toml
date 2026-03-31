@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Local-first semantic paper search over arXiv cs.LG"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "pyyaml>=6.0.2",
+]
 
 [project.scripts]
 arxiv-cslg-search = "arxiv_cslg_search.cli:main"

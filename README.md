@@ -39,6 +39,14 @@ Planned subcommands:
 - `train`
 - `search`
 
+Current working slice:
+
+```bash
+uv sync
+uv run python -m arxiv_cslg_search.cli corpus build --limit 10
+uv run python -m arxiv_cslg_search.cli corpus validate
+```
+
 ## Constraints
 
 - Fully local and cheap

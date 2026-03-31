@@ -1,0 +1,7 @@
+category: cs.LG
+start_date: 2016-04-01
+end_date: 2026-03-31
+target_size: 5000
+page_size: 100
+delay_seconds: 3.0
+selection_strategy: year_window_quota
