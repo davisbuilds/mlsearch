@@ -22,6 +22,8 @@ uv run python -m arxiv_cslg_search.cli train --config configs/train.yaml
 uv run python -m arxiv_cslg_search.cli eval compare --model latest --record-results
 ```
 
-## Current Limitation
+## Split Discipline
 
-The compare step currently evaluates against the generated benchmark rather than a reviewed held-out slice, so it is useful for plumbing verification but not yet a trustworthy research metric.
+- Training examples come from generated query candidates.
+- Any query promoted into `data/benchmark/reviewed/held_out_eval.jsonl` is excluded from training.
+- `eval compare` requires a baseline report built against the same benchmark split and will refuse to compare against a stale baseline.

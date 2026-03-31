@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 from typing import Callable
 
 from arxiv_cslg_search.paths import PATHS
 from arxiv_cslg_search.pipelines.build_corpus import build_corpus
+from arxiv_cslg_search.pipelines.finalize_review_set import finalize_review_set
 from arxiv_cslg_search.pipelines.generate_queries import generate_queries
 from arxiv_cslg_search.pipelines.sample_review_set import sample_review_set
 from arxiv_cslg_search.pipelines.validate_corpus import validate_corpus
@@ -50,6 +52,14 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
     review = nested.add_parser("sample-review", help="Sample queries for manual review.")
     review.add_argument("--count", type=int, default=30, help="Review sample size.")
     review.set_defaults(handler=_handle_benchmark_sample_review)
+
+    finalize = nested.add_parser("finalize-review", help="Finalize the reviewed held-out eval split.")
+    finalize.add_argument(
+        "--input",
+        default=str(PATHS.data_benchmark / "reviewed" / "review_sample.csv"),
+        help="Reviewed CSV to import into the held-out eval split.",
+    )
+    finalize.set_defaults(handler=_handle_benchmark_finalize_review)
 
 
 def _add_index_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -134,6 +144,12 @@ def _handle_benchmark_sample_review(args: argparse.Namespace) -> int:
         config_path=PATHS.configs / "benchmark.yaml",
         count=args.count,
     )
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_benchmark_finalize_review(args: argparse.Namespace) -> int:
+    report = finalize_review_set(review_path=PATHS.root / args.input if not Path(args.input).is_absolute() else Path(args.input))
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
     return 0
 

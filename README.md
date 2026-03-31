@@ -17,7 +17,7 @@ This repo is under active construction. The first milestone is:
 The intended happy path is:
 
 1. Build and validate the corpus.
-2. Generate benchmark queries and review a held-out slice.
+2. Generate benchmark queries, review a held-out slice, and finalize the reviewed eval split.
 3. Build a retrieval index and measure a zero-shot baseline.
 4. Fine-tune locally and compare against baseline.
 5. Search the local index from the CLI.
@@ -47,6 +47,8 @@ uv run python -m arxiv_cslg_search.cli corpus build --limit 10
 uv run python -m arxiv_cslg_search.cli corpus validate
 uv run python -m arxiv_cslg_search.cli benchmark generate
 uv run python -m arxiv_cslg_search.cli benchmark sample-review --count 4
+# edit data/benchmark/reviewed/review_sample.csv and set review_status to accept/edit/reject
+uv run python -m arxiv_cslg_search.cli benchmark finalize-review
 uv run python -m arxiv_cslg_search.cli index build
 uv run python -m arxiv_cslg_search.cli eval baseline
 uv run python -m arxiv_cslg_search.cli search "few-shot classification" --top-k 3

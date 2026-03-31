@@ -23,3 +23,11 @@ def test_search_parser_accepts_arguments() -> None:
     assert args.query == "test query"
     assert args.top_k == 3
     assert args.format == "json"
+
+
+def test_benchmark_finalize_review_parser_accepts_input_override() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["benchmark", "finalize-review", "--input", "data/benchmark/reviewed/review_sample.csv"])
+    assert args.command == "benchmark"
+    assert args.benchmark_command == "finalize-review"
+    assert args.input == "data/benchmark/reviewed/review_sample.csv"

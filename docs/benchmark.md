@@ -10,6 +10,8 @@
 - `data/benchmark/generated/query_candidates.jsonl`
 - `data/benchmark/generated/benchmark_manifest.json`
 - `data/benchmark/reviewed/review_sample.csv`
+- `data/benchmark/reviewed/held_out_eval.jsonl`
+- `data/benchmark/reviewed/held_out_eval_manifest.json`
 
 ## Query Types
 
@@ -24,6 +26,17 @@ Each query candidate carries:
 - one positive paper id
 - lexical hard negatives from overlapping title tokens
 
-## Current Limitation
+## Review Workflow
 
-The benchmark is still synthetic-first. The manual review slice exists, but reviewed labels have not been incorporated into a separate held-out evaluation split yet.
+1. Run `benchmark sample-review` to export a stratified CSV sample.
+2. Edit the CSV and set each row to `accept`, `edit`, or `reject`.
+3. For `edit`, fill in both `edited_query` and `relevant_paper_ids`.
+4. Run `benchmark finalize-review` to materialize the canonical held-out eval split.
+
+The finalized JSONL is the only reviewed artifact used by `eval baseline` and `eval compare`.
+
+## Split Rules
+
+- `data/benchmark/generated/query_candidates.jsonl` remains the synthetic pool.
+- `data/benchmark/reviewed/held_out_eval.jsonl` is the reviewed eval split.
+- Training excludes any `query_id` that appears in the reviewed eval file.

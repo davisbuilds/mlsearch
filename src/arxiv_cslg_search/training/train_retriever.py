@@ -27,6 +27,7 @@ def train_retriever(*, config_path: Path) -> TrainReport:
     examples = build_training_examples(
         candidates_path=PATHS.data_benchmark / "generated" / "query_candidates.jsonl",
         corpus_path=PATHS.data_processed / "corpus.jsonl",
+        held_out_eval_path=PATHS.data_benchmark / "reviewed" / "held_out_eval.jsonl",
         max_examples=config.max_examples,
     )
     if not examples:
