@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from arxiv_cslg_search.data.arxiv_client import build_search_query, parse_feed
+from mlsearch.data.arxiv_client import build_search_query, parse_feed
 
 
 SAMPLE_FEED = """<?xml version='1.0' encoding='UTF-8'?>

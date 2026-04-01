@@ -5,9 +5,9 @@ from pathlib import Path
 
 import numpy as np
 
-from arxiv_cslg_search.data.models import ArxivPaper
-from arxiv_cslg_search.retrieval.embedder import EmbedderConfig, TextEmbedder
-from arxiv_cslg_search.retrieval.index import load_index
+from mlsearch.data.models import ArxivPaper
+from mlsearch.retrieval.embedder import EmbedderConfig, TextEmbedder
+from mlsearch.retrieval.index import load_index
 
 
 @dataclass(frozen=True)

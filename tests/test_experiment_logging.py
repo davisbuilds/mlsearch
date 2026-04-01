@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from arxiv_cslg_search.experiments.compare import compare_metric_sets
-from arxiv_cslg_search.experiments.logging import append_result, ensure_results_file
+from mlsearch.experiments.compare import compare_metric_sets
+from mlsearch.experiments.logging import append_result, ensure_results_file
 
 
 def test_compare_metric_sets_prefers_higher_recall_then_mrr() -> None:

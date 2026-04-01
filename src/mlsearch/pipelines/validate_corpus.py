@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from arxiv_cslg_search.config import load_corpus_config
-from arxiv_cslg_search.data.models import ArxivPaper
-from arxiv_cslg_search.paths import PATHS
+from mlsearch.config import load_corpus_config
+from mlsearch.data.models import ArxivPaper
+from mlsearch.paths import PATHS
 
 
 @dataclass(frozen=True)

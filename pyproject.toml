@@ -1,5 +1,5 @@
 [project]
-name = "arxiv-cslg-search"
+name = "mlsearch"
 version = "0.1.0"
 description = "Local-first semantic paper search over arXiv cs.LG"
 readme = "README.md"
@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-arxiv-cslg-search = "arxiv_cslg_search.cli:main"
+mlsearch = "mlsearch.cli:main"
 
 [build-system]
 requires = ["hatchling==1.27.0"]

@@ -10,9 +10,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TextIO
 
-from arxiv_cslg_search.benchmark.schema import QueryCandidate, ReviewedQuery
-from arxiv_cslg_search.data.models import ArxivPaper
-from arxiv_cslg_search.pipelines.validate_corpus import load_corpus
+from mlsearch.benchmark.schema import QueryCandidate, ReviewedQuery
+from mlsearch.data.models import ArxivPaper
+from mlsearch.pipelines.validate_corpus import load_corpus
 
 
 REVIEW_COLUMNS = [

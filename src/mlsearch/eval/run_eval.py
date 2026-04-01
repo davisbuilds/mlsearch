@@ -5,16 +5,16 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from arxiv_cslg_search.benchmark.review import load_reviewed_queries
-from arxiv_cslg_search.benchmark.schema import QueryCandidate, ReviewedQuery
-from arxiv_cslg_search.experiments.compare import compare_metric_sets
-from arxiv_cslg_search.experiments.logging import append_result
-from arxiv_cslg_search.eval.metrics import ndcg_at_k, recall_at_k, reciprocal_rank
-from arxiv_cslg_search.paths import PATHS
-from arxiv_cslg_search.pipelines.generate_queries import load_query_candidates
-from arxiv_cslg_search.retrieval.index import build_index
-from arxiv_cslg_search.retrieval.search import search_many
-from arxiv_cslg_search.training.checkpoints import latest_checkpoint
+from mlsearch.benchmark.review import load_reviewed_queries
+from mlsearch.benchmark.schema import QueryCandidate, ReviewedQuery
+from mlsearch.experiments.compare import compare_metric_sets
+from mlsearch.experiments.logging import append_result
+from mlsearch.eval.metrics import ndcg_at_k, recall_at_k, reciprocal_rank
+from mlsearch.paths import PATHS
+from mlsearch.pipelines.generate_queries import load_query_candidates
+from mlsearch.retrieval.index import build_index
+from mlsearch.retrieval.search import search_many
+from mlsearch.training.checkpoints import latest_checkpoint
 
 
 @dataclass(frozen=True)

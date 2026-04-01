@@ -16,7 +16,7 @@ Build a fresh local-first ML research repo that indexes about 5,000 arXiv `cs.LG
 
 ### In Scope
 
-- Create a new standalone repo rooted at `/Users/dg-mac-mini/Dev/arxiv-cslg-search`.
+- Create a new standalone repo rooted at `/Users/dg-mac-mini/Dev/mlsearch`.
 - Build a reproducible `cs.LG` corpus pipeline using arXiv metadata and abstracts only.
 - Generate a synthetic-first mixed-query benchmark and a lightweight manual review flow.
 - Implement zero-shot embedding retrieval, indexing, and benchmark evaluation.
@@ -54,10 +54,10 @@ Create the new project scaffold, package metadata, reproducible environment, and
 - Create: `README.md`
 - Create: `pyproject.toml`
 - Create: `.gitignore`
-- Create: `src/arxiv_cslg_search/__init__.py`
-- Create: `src/arxiv_cslg_search/cli.py`
-- Create: `src/arxiv_cslg_search/config.py`
-- Create: `src/arxiv_cslg_search/paths.py`
+- Create: `src/mlsearch/__init__.py`
+- Create: `src/mlsearch/cli.py`
+- Create: `src/mlsearch/config.py`
+- Create: `src/mlsearch/paths.py`
 - Create: `tests/test_cli_smoke.py`
 - Create: `docs/architecture.md`
 
@@ -74,7 +74,7 @@ None
 
 **Verification**
 
-- Run: `uv run python -m arxiv_cslg_search.cli --help`
+- Run: `uv run python -m mlsearch.cli --help`
 - Expect: top-level help shows the planned subcommands without import errors
 - Run: `uv run pytest tests/test_cli_smoke.py`
 - Expect: CLI smoke test passes and package imports resolve cleanly
@@ -93,10 +93,10 @@ Implement a reproducible data pipeline that fetches, filters, normalizes, and st
 
 **Files**
 
-- Create: `src/arxiv_cslg_search/data/arxiv_client.py`
-- Create: `src/arxiv_cslg_search/data/models.py`
-- Create: `src/arxiv_cslg_search/pipelines/build_corpus.py`
-- Create: `src/arxiv_cslg_search/pipelines/validate_corpus.py`
+- Create: `src/mlsearch/data/arxiv_client.py`
+- Create: `src/mlsearch/data/models.py`
+- Create: `src/mlsearch/pipelines/build_corpus.py`
+- Create: `src/mlsearch/pipelines/validate_corpus.py`
 - Create: `configs/corpus.yaml`
 - Create: `tests/test_arxiv_client.py`
 - Create: `tests/test_corpus_validation.py`
@@ -116,9 +116,9 @@ Implement a reproducible data pipeline that fetches, filters, normalizes, and st
 
 **Verification**
 
-- Run: `uv run python -m arxiv_cslg_search.cli corpus build --limit 5000`
+- Run: `uv run python -m mlsearch.cli corpus build --limit 5000`
 - Expect: corpus artifact is created with about 5,000 valid `cs.LG` records
-- Run: `uv run python -m arxiv_cslg_search.cli corpus validate`
+- Run: `uv run python -m mlsearch.cli corpus validate`
 - Expect: validation exits successfully and reports zero schema/date/duplicate failures
 - Run: `uv run pytest tests/test_arxiv_client.py tests/test_corpus_validation.py`
 - Expect: client parsing and validation tests pass
@@ -137,10 +137,10 @@ Create the benchmark generation flow for mixed-style semantic-search queries and
 
 **Files**
 
-- Create: `src/arxiv_cslg_search/pipelines/generate_queries.py`
-- Create: `src/arxiv_cslg_search/pipelines/sample_review_set.py`
-- Create: `src/arxiv_cslg_search/benchmark/schema.py`
-- Create: `src/arxiv_cslg_search/benchmark/review.py`
+- Create: `src/mlsearch/pipelines/generate_queries.py`
+- Create: `src/mlsearch/pipelines/sample_review_set.py`
+- Create: `src/mlsearch/benchmark/schema.py`
+- Create: `src/mlsearch/benchmark/review.py`
 - Create: `configs/benchmark.yaml`
 - Create: `data/benchmark/review_template.csv`
 - Create: `tests/test_query_generation.py`
@@ -161,9 +161,9 @@ Create the benchmark generation flow for mixed-style semantic-search queries and
 
 **Verification**
 
-- Run: `uv run python -m arxiv_cslg_search.cli benchmark generate`
+- Run: `uv run python -m mlsearch.cli benchmark generate`
 - Expect: generated benchmark artifact contains mixed query styles and linked source positives
-- Run: `uv run python -m arxiv_cslg_search.cli benchmark sample-review --count 30`
+- Run: `uv run python -m mlsearch.cli benchmark sample-review --count 30`
 - Expect: review file is created with exactly 30 candidate queries
 - Run: `uv run pytest tests/test_query_generation.py tests/test_review_schema.py`
 - Expect: query generation and review schema tests pass
@@ -182,11 +182,11 @@ Implement the first real retrieval baseline, index build, and evaluation harness
 
 **Files**
 
-- Create: `src/arxiv_cslg_search/retrieval/embedder.py`
-- Create: `src/arxiv_cslg_search/retrieval/index.py`
-- Create: `src/arxiv_cslg_search/retrieval/search.py`
-- Create: `src/arxiv_cslg_search/eval/metrics.py`
-- Create: `src/arxiv_cslg_search/eval/run_eval.py`
+- Create: `src/mlsearch/retrieval/embedder.py`
+- Create: `src/mlsearch/retrieval/index.py`
+- Create: `src/mlsearch/retrieval/search.py`
+- Create: `src/mlsearch/eval/metrics.py`
+- Create: `src/mlsearch/eval/run_eval.py`
 - Create: `tests/test_metrics.py`
 - Create: `tests/test_retrieval_smoke.py`
 - Create: `artifacts/results/.gitkeep`
@@ -206,9 +206,9 @@ Implement the first real retrieval baseline, index build, and evaluation harness
 
 **Verification**
 
-- Run: `uv run python -m arxiv_cslg_search.cli index build`
+- Run: `uv run python -m mlsearch.cli index build`
 - Expect: local embedding/index artifacts are created successfully
-- Run: `uv run python -m arxiv_cslg_search.cli eval baseline`
+- Run: `uv run python -m mlsearch.cli eval baseline`
 - Expect: evaluation completes and writes a metrics report under `artifacts/results/`
 - Run: `uv run pytest tests/test_metrics.py tests/test_retrieval_smoke.py`
 - Expect: metrics and retrieval smoke tests pass
@@ -227,8 +227,8 @@ Turn the retrieval pipeline into a useful local search tool rather than leaving 
 
 **Files**
 
-- Modify: `src/arxiv_cslg_search/cli.py`
-- Create: `src/arxiv_cslg_search/present/search_output.py`
+- Modify: `src/mlsearch/cli.py`
+- Create: `src/mlsearch/present/search_output.py`
 - Create: `tests/test_search_cli.py`
 - Modify: `README.md`
 
@@ -245,9 +245,9 @@ Turn the retrieval pipeline into a useful local search tool rather than leaving 
 
 **Verification**
 
-- Run: `uv run python -m arxiv_cslg_search.cli search \"test-time adaptation under distribution shift\" --top-k 5`
+- Run: `uv run python -m mlsearch.cli search \"test-time adaptation under distribution shift\" --top-k 5`
 - Expect: five ranked papers are returned with ids, titles, and scores
-- Run: `uv run python -m arxiv_cslg_search.cli search \"graph neural networks for molecules\" --format json`
+- Run: `uv run python -m mlsearch.cli search \"graph neural networks for molecules\" --format json`
 - Expect: valid JSON output with ranked hits
 - Run: `uv run pytest tests/test_search_cli.py`
 - Expect: CLI search behavior is covered by tests
@@ -266,9 +266,9 @@ Implement the first local training loop that uses the benchmark artifacts to imp
 
 **Files**
 
-- Create: `src/arxiv_cslg_search/training/dataset.py`
-- Create: `src/arxiv_cslg_search/training/train_retriever.py`
-- Create: `src/arxiv_cslg_search/training/checkpoints.py`
+- Create: `src/mlsearch/training/dataset.py`
+- Create: `src/mlsearch/training/train_retriever.py`
+- Create: `src/mlsearch/training/checkpoints.py`
 - Create: `configs/train.yaml`
 - Create: `tests/test_training_dataset.py`
 - Create: `docs/training.md`
@@ -288,9 +288,9 @@ Implement the first local training loop that uses the benchmark artifacts to imp
 
 **Verification**
 
-- Run: `uv run python -m arxiv_cslg_search.cli train --config configs/train.yaml`
+- Run: `uv run python -m mlsearch.cli train --config configs/train.yaml`
 - Expect: at least one checkpoint and training summary artifact are produced successfully
-- Run: `uv run python -m arxiv_cslg_search.cli eval compare --model latest`
+- Run: `uv run python -m mlsearch.cli eval compare --model latest`
 - Expect: comparison report shows trained-model metrics versus zero-shot baseline
 - Run: `uv run pytest tests/test_training_dataset.py`
 - Expect: training dataset construction tests pass
@@ -311,8 +311,8 @@ Shape the repo so future autonomous iteration can mutate a narrow surface while 
 
 - Create: `program.md`
 - Create: `results.tsv`
-- Create: `src/arxiv_cslg_search/experiments/logging.py`
-- Create: `src/arxiv_cslg_search/experiments/compare.py`
+- Create: `src/mlsearch/experiments/logging.py`
+- Create: `src/mlsearch/experiments/compare.py`
 - Create: `tests/test_experiment_logging.py`
 - Modify: `README.md`
 
@@ -330,7 +330,7 @@ Shape the repo so future autonomous iteration can mutate a narrow surface while 
 
 **Verification**
 
-- Run: `uv run python -m arxiv_cslg_search.cli eval compare --model latest --record-results`
+- Run: `uv run python -m mlsearch.cli eval compare --model latest --record-results`
 - Expect: a new row is appended to `results.tsv` with metrics and status
 - Run: `uv run pytest tests/test_experiment_logging.py`
 - Expect: ledger logging and comparison logic tests pass
@@ -376,9 +376,9 @@ Close the loop with documentation, a clean end-to-end workflow, and enough verif
 
 - Run: `uv run pytest tests/test_e2e_smoke.py`
 - Expect: fixture-based end-to-end smoke test passes
-- Run: `uv run python -m arxiv_cslg_search.cli --help`
+- Run: `uv run python -m mlsearch.cli --help`
 - Expect: all planned subcommands are discoverable and documented
-- Run: `uv run python -m arxiv_cslg_search.cli search \"meta-learning for few-shot classification\" --top-k 3`
+- Run: `uv run python -m mlsearch.cli search \"meta-learning for few-shot classification\" --top-k 3`
 - Expect: search works after following the documented setup path
 
 **Done When**
@@ -404,15 +404,15 @@ Close the loop with documentation, a clean end-to-end workflow, and enough verif
 
 | Requirement | Proof command | Expected signal |
 | --- | --- | --- |
-| Repo bootstrap is usable | `uv run python -m arxiv_cslg_search.cli --help` | CLI help renders without import or config errors |
-| Corpus build is reproducible and valid | `uv run python -m arxiv_cslg_search.cli corpus validate` | Validation passes with zero duplicate/schema/date errors |
-| Benchmark generation works | `uv run python -m arxiv_cslg_search.cli benchmark generate` | Query artifact is created with linked positives |
-| Reviewed eval slice workflow exists | `uv run python -m arxiv_cslg_search.cli benchmark sample-review --count 30` | Review file with 30 candidate queries is produced |
-| Zero-shot baseline is established | `uv run python -m arxiv_cslg_search.cli eval baseline` | Baseline metrics report is written to `artifacts/results/` |
-| CLI search is usable | `uv run python -m arxiv_cslg_search.cli search "test-time adaptation under distribution shift" --top-k 5` | Ranked paper results are printed with ids, titles, and scores |
-| Fine-tuning path runs locally | `uv run python -m arxiv_cslg_search.cli train --config configs/train.yaml` | Training completes enough to emit a checkpoint and summary artifact |
-| Trained model comparison is mechanical | `uv run python -m arxiv_cslg_search.cli eval compare --model latest` | Output reports trained-model metrics alongside the zero-shot baseline |
-| Autoresearch-style ledger is wired | `uv run python -m arxiv_cslg_search.cli eval compare --model latest --record-results` | `results.tsv` receives a new structured row |
+| Repo bootstrap is usable | `uv run python -m mlsearch.cli --help` | CLI help renders without import or config errors |
+| Corpus build is reproducible and valid | `uv run python -m mlsearch.cli corpus validate` | Validation passes with zero duplicate/schema/date errors |
+| Benchmark generation works | `uv run python -m mlsearch.cli benchmark generate` | Query artifact is created with linked positives |
+| Reviewed eval slice workflow exists | `uv run python -m mlsearch.cli benchmark sample-review --count 30` | Review file with 30 candidate queries is produced |
+| Zero-shot baseline is established | `uv run python -m mlsearch.cli eval baseline` | Baseline metrics report is written to `artifacts/results/` |
+| CLI search is usable | `uv run python -m mlsearch.cli search "test-time adaptation under distribution shift" --top-k 5` | Ranked paper results are printed with ids, titles, and scores |
+| Fine-tuning path runs locally | `uv run python -m mlsearch.cli train --config configs/train.yaml` | Training completes enough to emit a checkpoint and summary artifact |
+| Trained model comparison is mechanical | `uv run python -m mlsearch.cli eval compare --model latest` | Output reports trained-model metrics alongside the zero-shot baseline |
+| Autoresearch-style ledger is wired | `uv run python -m mlsearch.cli eval compare --model latest --record-results` | `results.tsv` receives a new structured row |
 | End-to-end workflow composes | `uv run pytest tests/test_e2e_smoke.py` | Fixture-based smoke path passes |
 
 ## Handoff

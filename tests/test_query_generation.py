@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from arxiv_cslg_search.benchmark.schema import QueryCandidate
-from arxiv_cslg_search.config import BenchmarkConfig
-from arxiv_cslg_search.data.models import ArxivPaper
-from arxiv_cslg_search.pipelines.generate_queries import build_query_candidates
+from mlsearch.benchmark.schema import QueryCandidate
+from mlsearch.config import BenchmarkConfig
+from mlsearch.data.models import ArxivPaper
+from mlsearch.pipelines.generate_queries import build_query_candidates
 
 
 def _paper(arxiv_id: str, title: str) -> ArxivPaper:

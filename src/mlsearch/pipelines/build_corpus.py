@@ -5,10 +5,10 @@ from dataclasses import asdict, dataclass, replace
 from datetime import date, timedelta
 from pathlib import Path
 
-from arxiv_cslg_search.config import CorpusConfig, load_corpus_config
-from arxiv_cslg_search.data.arxiv_client import ArxivClient, DateWindow, build_search_query
-from arxiv_cslg_search.data.models import ArxivPaper
-from arxiv_cslg_search.paths import PATHS
+from mlsearch.config import CorpusConfig, load_corpus_config
+from mlsearch.data.arxiv_client import ArxivClient, DateWindow, build_search_query
+from mlsearch.data.models import ArxivPaper
+from mlsearch.paths import PATHS
 
 
 @dataclass(frozen=True)

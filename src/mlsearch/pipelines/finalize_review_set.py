@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from arxiv_cslg_search.benchmark.review import finalize_review_csv
-from arxiv_cslg_search.paths import PATHS
+from mlsearch.benchmark.review import finalize_review_csv
+from mlsearch.paths import PATHS
 
 
 @dataclass(frozen=True)

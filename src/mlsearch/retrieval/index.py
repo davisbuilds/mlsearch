@@ -7,10 +7,10 @@ from pathlib import Path
 
 import numpy as np
 
-from arxiv_cslg_search.data.models import ArxivPaper
-from arxiv_cslg_search.paths import PATHS
-from arxiv_cslg_search.pipelines.validate_corpus import load_corpus
-from arxiv_cslg_search.retrieval.embedder import DEFAULT_MODEL_NAME, EmbedderConfig, TextEmbedder
+from mlsearch.data.models import ArxivPaper
+from mlsearch.paths import PATHS
+from mlsearch.pipelines.validate_corpus import load_corpus
+from mlsearch.retrieval.embedder import DEFAULT_MODEL_NAME, EmbedderConfig, TextEmbedder
 
 
 @dataclass(frozen=True)

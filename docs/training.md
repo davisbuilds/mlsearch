@@ -18,8 +18,8 @@ Training currently forces CPU because the sentence-transformers training path hi
 ## Commands
 
 ```bash
-uv run python -m arxiv_cslg_search.cli train --config configs/train.yaml
-uv run python -m arxiv_cslg_search.cli eval compare --model latest --record-results
+uv run mlsearch train --config configs/train.yaml
+uv run mlsearch eval compare --model latest --record-results
 ```
 
 ## Split Discipline

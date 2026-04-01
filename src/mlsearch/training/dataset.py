@@ -3,11 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from arxiv_cslg_search.benchmark.review import load_reviewed_queries
-from arxiv_cslg_search.data.models import ArxivPaper
-from arxiv_cslg_search.pipelines.generate_queries import load_query_candidates
-from arxiv_cslg_search.pipelines.validate_corpus import load_corpus
-from arxiv_cslg_search.retrieval.index import format_document
+from mlsearch.benchmark.review import load_reviewed_queries
+from mlsearch.data.models import ArxivPaper
+from mlsearch.pipelines.generate_queries import load_query_candidates
+from mlsearch.pipelines.validate_corpus import load_corpus
+from mlsearch.retrieval.index import format_document
 
 
 @dataclass(frozen=True)

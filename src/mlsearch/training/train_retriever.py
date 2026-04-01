@@ -8,10 +8,10 @@ import torch
 from sentence_transformers import InputExample, SentenceTransformer, losses
 from torch.utils.data import DataLoader
 
-from arxiv_cslg_search.config import load_train_config
-from arxiv_cslg_search.paths import PATHS
-from arxiv_cslg_search.training.checkpoints import create_run_dir
-from arxiv_cslg_search.training.dataset import build_training_examples
+from mlsearch.config import load_train_config
+from mlsearch.paths import PATHS
+from mlsearch.training.checkpoints import create_run_dir
+from mlsearch.training.dataset import build_training_examples
 
 
 @dataclass(frozen=True)

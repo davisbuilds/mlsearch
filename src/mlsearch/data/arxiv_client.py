@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 
-from arxiv_cslg_search.data.models import ArxivPaper
+from mlsearch.data.models import ArxivPaper
 
 ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
 OPENSEARCH_NS = {"opensearch": "http://a9.com/-/spec/opensearch/1.1/"}

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from arxiv_cslg_search.data.models import ArxivPaper
-from arxiv_cslg_search.pipelines.validate_corpus import validate_papers
+from mlsearch.data.models import ArxivPaper
+from mlsearch.pipelines.validate_corpus import validate_papers
 
 
 def _paper(arxiv_id: str, *, abstract: str = "Abstract") -> ArxivPaper:

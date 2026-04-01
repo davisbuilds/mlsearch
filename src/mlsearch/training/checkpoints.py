@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from arxiv_cslg_search.paths import PATHS
+from mlsearch.paths import PATHS
 
 
 def create_run_dir(prefix: str) -> Path:

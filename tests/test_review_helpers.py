@@ -5,14 +5,14 @@ import io
 import json
 from pathlib import Path
 
-from arxiv_cslg_search.benchmark.review import (
+from mlsearch.benchmark.review import (
     apply_review_decision,
     load_next_review_item,
     load_review_rows,
     run_review_loop,
     summarize_review_progress,
 )
-from arxiv_cslg_search.data.models import ArxivPaper
+from mlsearch.data.models import ArxivPaper
 
 
 def _write_review_csv(path: Path) -> None:

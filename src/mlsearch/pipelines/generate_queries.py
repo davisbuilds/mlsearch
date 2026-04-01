@@ -7,11 +7,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from arxiv_cslg_search.benchmark.schema import QueryCandidate
-from arxiv_cslg_search.config import BenchmarkConfig, load_benchmark_config
-from arxiv_cslg_search.data.models import ArxivPaper
-from arxiv_cslg_search.paths import PATHS
-from arxiv_cslg_search.pipelines.validate_corpus import load_corpus
+from mlsearch.benchmark.schema import QueryCandidate
+from mlsearch.config import BenchmarkConfig, load_benchmark_config
+from mlsearch.data.models import ArxivPaper
+from mlsearch.paths import PATHS
+from mlsearch.pipelines.validate_corpus import load_corpus
 
 TOKEN_RE = re.compile(r"[a-z0-9]+")
 STOPWORDS = {

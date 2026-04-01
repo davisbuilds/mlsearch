@@ -5,18 +5,18 @@ import json
 from pathlib import Path
 from typing import Callable
 
-from arxiv_cslg_search.paths import PATHS
-from arxiv_cslg_search.pipelines.build_corpus import build_corpus
-from arxiv_cslg_search.pipelines.finalize_review_set import finalize_review_set
-from arxiv_cslg_search.pipelines.generate_queries import generate_queries
-from arxiv_cslg_search.pipelines.review_workflow import review_loop, review_next, review_stats
-from arxiv_cslg_search.pipelines.sample_review_set import sample_review_set
-from arxiv_cslg_search.pipelines.validate_corpus import validate_corpus
+from mlsearch.paths import PATHS
+from mlsearch.pipelines.build_corpus import build_corpus
+from mlsearch.pipelines.finalize_review_set import finalize_review_set
+from mlsearch.pipelines.generate_queries import generate_queries
+from mlsearch.pipelines.review_workflow import review_loop, review_next, review_stats
+from mlsearch.pipelines.sample_review_set import sample_review_set
+from mlsearch.pipelines.validate_corpus import validate_corpus
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="arxiv-cslg-search",
+        prog="mlsearch",
         description="Local-first semantic paper search over arXiv cs.LG.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -226,7 +226,7 @@ def _handle_benchmark_review_loop(args: argparse.Namespace) -> int:
 
 
 def _handle_index_build(args: argparse.Namespace) -> int:
-    from arxiv_cslg_search.retrieval.index import build_index
+    from mlsearch.retrieval.index import build_index
 
     report = build_index(model_name=args.model)
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
@@ -234,7 +234,7 @@ def _handle_index_build(args: argparse.Namespace) -> int:
 
 
 def _handle_eval_baseline(_: argparse.Namespace) -> int:
-    from arxiv_cslg_search.eval.run_eval import run_baseline_eval
+    from mlsearch.eval.run_eval import run_baseline_eval
 
     try:
         report = run_baseline_eval()
@@ -245,7 +245,7 @@ def _handle_eval_baseline(_: argparse.Namespace) -> int:
 
 
 def _handle_eval_compare(args: argparse.Namespace) -> int:
-    from arxiv_cslg_search.eval.run_eval import run_compare_eval
+    from mlsearch.eval.run_eval import run_compare_eval
 
     report = run_compare_eval(model_ref=args.model, record_results=args.record_results)
     print(json.dumps(report, indent=2, sort_keys=True))
@@ -253,7 +253,7 @@ def _handle_eval_compare(args: argparse.Namespace) -> int:
 
 
 def _handle_train(args: argparse.Namespace) -> int:
-    from arxiv_cslg_search.training.train_retriever import train_retriever
+    from mlsearch.training.train_retriever import train_retriever
 
     report = train_retriever(config_path=PATHS.root / args.config)
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
@@ -261,8 +261,8 @@ def _handle_train(args: argparse.Namespace) -> int:
 
 
 def _handle_search(args: argparse.Namespace) -> int:
-    from arxiv_cslg_search.present.search_output import render_hits
-    from arxiv_cslg_search.retrieval.search import search_index
+    from mlsearch.present.search_output import render_hits
+    from mlsearch.retrieval.search import search_index
 
     try:
         hits = search_index(args.query, top_k=args.top_k)

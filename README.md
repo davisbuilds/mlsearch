@@ -1,4 +1,4 @@
-# arXiv cs.LG Search
+# MLSearch
 
 Local-first semantic paper search over arXiv `cs.LG`, with a benchmark-first workflow and a CLI-first search tool.
 
@@ -27,7 +27,7 @@ The intended happy path is:
 The top-level command surface is:
 
 ```bash
-uv run python -m arxiv_cslg_search.cli --help
+uv run mlsearch --help
 ```
 
 Planned subcommands:
@@ -49,20 +49,20 @@ Current working slice:
 
 ```bash
 uv sync
-uv run python -m arxiv_cslg_search.cli corpus build --limit 10
-uv run python -m arxiv_cslg_search.cli corpus validate
-uv run python -m arxiv_cslg_search.cli benchmark generate
-uv run python -m arxiv_cslg_search.cli benchmark sample-review --count 4
-uv run python -m arxiv_cslg_search.cli benchmark review-stats
-uv run python -m arxiv_cslg_search.cli benchmark review-next
-uv run python -m arxiv_cslg_search.cli benchmark review-loop --limit 1
+uv run mlsearch corpus build --limit 10
+uv run mlsearch corpus validate
+uv run mlsearch benchmark generate
+uv run mlsearch benchmark sample-review --count 4
+uv run mlsearch benchmark review-stats
+uv run mlsearch benchmark review-next
+uv run mlsearch benchmark review-loop --limit 1
 # edit data/benchmark/reviewed/review_sample.csv and set review_status to accept/edit/reject
-uv run python -m arxiv_cslg_search.cli benchmark finalize-review
-uv run python -m arxiv_cslg_search.cli index build
-uv run python -m arxiv_cslg_search.cli eval baseline
-uv run python -m arxiv_cslg_search.cli search "few-shot classification" --top-k 3
-uv run python -m arxiv_cslg_search.cli train --config configs/train.yaml
-uv run python -m arxiv_cslg_search.cli eval compare --model latest --record-results
+uv run mlsearch benchmark finalize-review
+uv run mlsearch index build
+uv run mlsearch eval baseline
+uv run mlsearch search "few-shot classification" --top-k 3
+uv run mlsearch train --config configs/train.yaml
+uv run mlsearch eval compare --model latest --record-results
 ```
 
 ## Constraints

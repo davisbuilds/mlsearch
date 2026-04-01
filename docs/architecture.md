@@ -11,9 +11,9 @@ The repo is organized around a benchmark-first retrieval workflow:
 
 ## Initial Layout
 
-- `src/arxiv_cslg_search/cli.py`: CLI entrypoint
-- `src/arxiv_cslg_search/config.py`: project-level runtime settings
-- `src/arxiv_cslg_search/paths.py`: canonical filesystem paths
+- `src/mlsearch/cli.py`: CLI entrypoint
+- `src/mlsearch/config.py`: project-level runtime settings
+- `src/mlsearch/paths.py`: canonical filesystem paths
 - `configs/`: user-editable configuration files
 - `data/`: local dataset and benchmark artifacts
 - `artifacts/`: model outputs, reports, and indexes

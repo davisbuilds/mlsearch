@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from arxiv_cslg_search.data.models import ArxivPaper
-from arxiv_cslg_search.retrieval.search import rank_hits
+from mlsearch.data.models import ArxivPaper
+from mlsearch.retrieval.search import rank_hits
 
 
 def _paper(arxiv_id: str, title: str) -> ArxivPaper:

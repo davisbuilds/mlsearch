@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from arxiv_cslg_search.data.models import ArxivPaper
-from arxiv_cslg_search.training.dataset import build_training_examples
+from mlsearch.data.models import ArxivPaper
+from mlsearch.training.dataset import build_training_examples
 
 
 def test_build_training_examples_maps_query_to_positive_document(tmp_path: Path) -> None:

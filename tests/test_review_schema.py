@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from arxiv_cslg_search.benchmark.review import (
+from mlsearch.benchmark.review import (
     REVIEW_COLUMNS,
     finalize_review_csv,
     write_review_csv,
 )
-from arxiv_cslg_search.benchmark.schema import QueryCandidate, ReviewedQuery
+from mlsearch.benchmark.schema import QueryCandidate, ReviewedQuery
 
 
 def test_write_review_csv_creates_expected_columns(tmp_path: Path) -> None:

@@ -5,11 +5,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from arxiv_cslg_search.benchmark.review import write_review_csv
-from arxiv_cslg_search.benchmark.schema import QueryCandidate
-from arxiv_cslg_search.config import load_benchmark_config
-from arxiv_cslg_search.paths import PATHS
-from arxiv_cslg_search.pipelines.generate_queries import load_query_candidates
+from mlsearch.benchmark.review import write_review_csv
+from mlsearch.benchmark.schema import QueryCandidate
+from mlsearch.config import load_benchmark_config
+from mlsearch.paths import PATHS
+from mlsearch.pipelines.generate_queries import load_query_candidates
 
 
 @dataclass(frozen=True)

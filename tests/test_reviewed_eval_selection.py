@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from arxiv_cslg_search.benchmark.schema import QueryCandidate, ReviewedQuery
-from arxiv_cslg_search.eval.run_eval import ensure_baseline_compatible, resolve_eval_candidates
+from mlsearch.benchmark.schema import QueryCandidate, ReviewedQuery
+from mlsearch.eval.run_eval import ensure_baseline_compatible, resolve_eval_candidates
 
 
 def test_resolve_eval_candidates_prefers_reviewed_split(tmp_path: Path) -> None:

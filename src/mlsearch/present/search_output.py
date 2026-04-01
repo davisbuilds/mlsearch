@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from arxiv_cslg_search.retrieval.search import SearchHit
+from mlsearch.retrieval.search import SearchHit
 
 
 def render_hits(hits: list[SearchHit], *, output_format: str) -> str:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from arxiv_cslg_search import cli
+from mlsearch import cli
 
 
 def test_help_renders(capsys: pytest.CaptureFixture[str]) -> None:

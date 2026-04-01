@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from arxiv_cslg_search.benchmark.review import (
+from mlsearch.benchmark.review import (
     load_next_review_item,
     run_review_loop,
     summarize_review_progress,
 )
-from arxiv_cslg_search.paths import PATHS
+from mlsearch.paths import PATHS
 
 
 def review_stats(*, review_path: Path | None = None):
