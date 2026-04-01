@@ -1,10 +1,17 @@
 from __future__ import annotations
 
 import csv
+import io
 import json
 from pathlib import Path
 
-from arxiv_cslg_search.benchmark.review import load_next_review_item, summarize_review_progress
+from arxiv_cslg_search.benchmark.review import (
+    apply_review_decision,
+    load_next_review_item,
+    load_review_rows,
+    run_review_loop,
+    summarize_review_progress,
+)
 from arxiv_cslg_search.data.models import ArxivPaper
 
 
@@ -132,3 +139,65 @@ def test_load_next_review_item_can_select_explicit_query_id(tmp_path: Path) -> N
     assert report.query_id == "paper-2-keyword"
     assert report.review_row["review_status"] == "accept"
     assert report.source_paper["arxiv_id"] == "paper-2"
+
+
+def test_apply_review_decision_updates_row_for_accept(tmp_path: Path) -> None:
+    review_path = tmp_path / "review.csv"
+    _write_review_csv(review_path)
+    rows = load_review_rows(review_path)
+
+    updated = apply_review_decision(
+        rows[0],
+        action="accept",
+        notes="clear accept",
+    )
+
+    assert updated["review_status"] == "accept"
+    assert updated["edited_query"] == ""
+    assert updated["relevant_paper_ids"] == ""
+    assert updated["notes"] == "clear accept"
+
+
+def test_apply_review_decision_updates_row_for_edit(tmp_path: Path) -> None:
+    review_path = tmp_path / "review.csv"
+    _write_review_csv(review_path)
+    rows = load_review_rows(review_path)
+
+    updated = apply_review_decision(
+        rows[0],
+        action="edit",
+        edited_query="few-shot classification meta-learning",
+        relevant_paper_ids="paper-1|paper-2",
+        notes="better wording",
+    )
+
+    assert updated["review_status"] == "edit"
+    assert updated["edited_query"] == "few-shot classification meta-learning"
+    assert updated["relevant_paper_ids"] == "paper-1|paper-2"
+    assert updated["notes"] == "better wording"
+
+
+def test_run_review_loop_accepts_pending_row_and_persists_csv(tmp_path: Path) -> None:
+    review_path = tmp_path / "review.csv"
+    corpus_path = tmp_path / "corpus.jsonl"
+    _write_review_csv(review_path)
+    _write_corpus(corpus_path)
+
+    stdin = io.StringIO("a\nlooks good\nq\n")
+    stdout = io.StringIO()
+
+    report = run_review_loop(
+        review_path=review_path,
+        corpus_path=corpus_path,
+        input_stream=stdin,
+        output_stream=stdout,
+        limit=1,
+    )
+
+    assert report.updated_count == 1
+    updated_rows = load_review_rows(review_path)
+    assert updated_rows[0]["review_status"] == "accept"
+    assert updated_rows[0]["notes"] == "looks good"
+    output = stdout.getvalue()
+    assert "paper-1-question" in output
+    assert "Accepted." in output

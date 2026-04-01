@@ -57,3 +57,24 @@ def test_benchmark_review_next_parser_accepts_query_id_override() -> None:
     assert args.benchmark_command == "review-next"
     assert args.input == "data/benchmark/reviewed/review_sample.csv"
     assert args.query_id == "paper-1-question"
+
+
+def test_benchmark_review_loop_parser_accepts_limit_and_query_id() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(
+        [
+            "benchmark",
+            "review-loop",
+            "--input",
+            "data/benchmark/reviewed/review_sample.csv",
+            "--query-id",
+            "paper-1-question",
+            "--limit",
+            "3",
+        ]
+    )
+    assert args.command == "benchmark"
+    assert args.benchmark_command == "review-loop"
+    assert args.input == "data/benchmark/reviewed/review_sample.csv"
+    assert args.query_id == "paper-1-question"
+    assert args.limit == 3

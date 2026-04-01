@@ -9,7 +9,7 @@ from arxiv_cslg_search.paths import PATHS
 from arxiv_cslg_search.pipelines.build_corpus import build_corpus
 from arxiv_cslg_search.pipelines.finalize_review_set import finalize_review_set
 from arxiv_cslg_search.pipelines.generate_queries import generate_queries
-from arxiv_cslg_search.pipelines.review_workflow import review_next, review_stats
+from arxiv_cslg_search.pipelines.review_workflow import review_loop, review_next, review_stats
 from arxiv_cslg_search.pipelines.sample_review_set import sample_review_set
 from arxiv_cslg_search.pipelines.validate_corpus import validate_corpus
 
@@ -82,6 +82,28 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
         help="Inspect a specific query id instead of the next pending row.",
     )
     next_item.set_defaults(handler=_handle_benchmark_review_next)
+
+    review_loop_parser = nested.add_parser(
+        "review-loop",
+        help="Interactively review rows and persist decisions back to the CSV.",
+    )
+    review_loop_parser.add_argument(
+        "--input",
+        default=str(PATHS.data_benchmark / "reviewed" / "review_sample.csv"),
+        help="Reviewed CSV to edit in place.",
+    )
+    review_loop_parser.add_argument(
+        "--query-id",
+        default=None,
+        help="Start from a specific query id instead of the next pending row.",
+    )
+    review_loop_parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Maximum number of rows to process before exiting.",
+    )
+    review_loop_parser.set_defaults(handler=_handle_benchmark_review_loop)
 
 
 def _add_index_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -189,6 +211,16 @@ def _handle_benchmark_review_next(args: argparse.Namespace) -> int:
         report = review_next(review_path=review_path, query_id=args.query_id)
     except ValueError as exc:
         raise SystemExit(f"Review lookup failed: {exc}") from exc
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_benchmark_review_loop(args: argparse.Namespace) -> int:
+    review_path = PATHS.root / args.input if not Path(args.input).is_absolute() else Path(args.input)
+    try:
+        report = review_loop(review_path=review_path, query_id=args.query_id, limit=args.limit)
+    except ValueError as exc:
+        raise SystemExit(f"Interactive review failed: {exc}") from exc
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
     return 0
 

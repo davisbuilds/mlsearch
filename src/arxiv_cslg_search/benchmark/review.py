@@ -3,10 +3,12 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TextIO
 
 from arxiv_cslg_search.benchmark.schema import QueryCandidate, ReviewedQuery
 from arxiv_cslg_search.data.models import ArxivPaper
@@ -77,6 +79,14 @@ class ReviewNextReport:
     source_paper: dict[str, object]
     positive_papers: list[dict[str, object]]
     hard_negative_papers: list[dict[str, object]]
+
+
+@dataclass(frozen=True)
+class ReviewLoopReport:
+    review_path: str
+    updated_count: int
+    processed_count: int
+    stopped_reason: str
 
 
 def finalize_review_csv(
@@ -193,6 +203,151 @@ def load_review_rows(review_path: Path) -> list[dict[str, str]]:
         return [{key: (value or "") for key, value in row.items()} for row in reader]
 
 
+def save_review_rows(review_path: Path, rows: list[dict[str, str]]) -> None:
+    review_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = review_path.with_suffix(f"{review_path.suffix}.tmp")
+    with temp_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=REVIEW_COLUMNS)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({column: row.get(column, "") for column in REVIEW_COLUMNS})
+    temp_path.replace(review_path)
+
+
+def apply_review_decision(
+    row: dict[str, str],
+    *,
+    action: str,
+    edited_query: str = "",
+    relevant_paper_ids: str = "",
+    notes: str = "",
+) -> dict[str, str]:
+    normalized_action = action.strip().lower()
+    if normalized_action not in {"accept", "edit", "reject", "pending"}:
+        raise ValueError(f"Unsupported review action: {action!r}")
+
+    updated = dict(row)
+    updated["review_status"] = normalized_action
+    updated["notes"] = notes
+
+    if normalized_action == "accept":
+        updated["edited_query"] = ""
+        updated["relevant_paper_ids"] = ""
+        return updated
+    if normalized_action == "edit":
+        if not edited_query.strip():
+            raise ValueError("edited_query is required for edit")
+        if not relevant_paper_ids.strip():
+            raise ValueError("relevant_paper_ids is required for edit")
+        updated["edited_query"] = edited_query.strip()
+        updated["relevant_paper_ids"] = relevant_paper_ids.strip()
+        return updated
+
+    updated["edited_query"] = ""
+    updated["relevant_paper_ids"] = ""
+    return updated
+
+
+def run_review_loop(
+    *,
+    review_path: Path,
+    corpus_path: Path,
+    input_stream: TextIO | None = None,
+    output_stream: TextIO | None = None,
+    query_id: str | None = None,
+    limit: int | None = None,
+) -> ReviewLoopReport:
+    stdin = input_stream or sys.stdin
+    stdout = output_stream or sys.stdout
+    processed_count = 0
+    updated_count = 0
+    stopped_reason = "completed"
+    selected_query_id = query_id
+
+    while limit is None or processed_count < limit:
+        rows = load_review_rows(review_path)
+        try:
+            row = _select_review_row(rows, query_id=selected_query_id)
+        except ValueError as exc:
+            stopped_reason = "no_pending" if query_id is None else "not_found"
+            if processed_count == 0:
+                raise
+            break
+
+        report = load_next_review_item(
+            review_path=review_path,
+            corpus_path=corpus_path,
+            query_id=row["query_id"],
+        )
+        _render_review_item(report, stdout)
+        command = _prompt(stdin, stdout, "Action [a]ccept [e]dit [r]eject [s]kip [q]uit: ").strip().lower()
+        if command in {"q", "quit"}:
+            stopped_reason = "quit"
+            break
+        if command in {"s", "skip"}:
+            stdout.write("Skipped.\n")
+            processed_count += 1
+            selected_query_id = None
+            continue
+        if command in {"a", "accept"}:
+            notes = _prompt(stdin, stdout, "Notes (optional): ")
+            _update_row_in_file(
+                review_path,
+                query_id=row["query_id"],
+                updated_row=apply_review_decision(row, action="accept", notes=notes.strip()),
+            )
+            stdout.write("Accepted.\n")
+            processed_count += 1
+            updated_count += 1
+            selected_query_id = None
+            continue
+        if command in {"r", "reject"}:
+            notes = _prompt(stdin, stdout, "Notes (optional): ")
+            _update_row_in_file(
+                review_path,
+                query_id=row["query_id"],
+                updated_row=apply_review_decision(row, action="reject", notes=notes.strip()),
+            )
+            stdout.write("Rejected.\n")
+            processed_count += 1
+            updated_count += 1
+            selected_query_id = None
+            continue
+        if command in {"e", "edit"}:
+            edited_query = _prompt(stdin, stdout, "Edited query: ").strip()
+            relevant_paper_ids = _prompt(
+                stdin,
+                stdout,
+                f"Relevant paper ids (pipe-separated) [{row.get('positive_ids', '')}]: ",
+            ).strip() or row.get("positive_ids", "")
+            notes = _prompt(stdin, stdout, "Notes (optional): ").strip()
+            _update_row_in_file(
+                review_path,
+                query_id=row["query_id"],
+                updated_row=apply_review_decision(
+                    row,
+                    action="edit",
+                    edited_query=edited_query,
+                    relevant_paper_ids=relevant_paper_ids,
+                    notes=notes,
+                ),
+            )
+            stdout.write("Edited.\n")
+            processed_count += 1
+            updated_count += 1
+            selected_query_id = None
+            continue
+
+        stdout.write("Unknown action. Use a, e, r, s, or q.\n")
+
+    return ReviewLoopReport(
+        review_path=str(review_path),
+        updated_count=updated_count,
+        processed_count=processed_count,
+        stopped_reason=stopped_reason,
+    )
+
+
 def _row_to_reviewed_query(
     row: dict[str, str | None],
     *,
@@ -270,6 +425,53 @@ def _select_review_row(rows: list[dict[str, str]], *, query_id: str | None) -> d
         if _normalize_review_status(row.get("review_status")) == "pending":
             return row
     raise ValueError("No pending review rows found")
+
+
+def _update_row_in_file(review_path: Path, *, query_id: str, updated_row: dict[str, str]) -> None:
+    rows = load_review_rows(review_path)
+    for index, row in enumerate(rows):
+        if row.get("query_id") == query_id:
+            rows[index] = updated_row
+            save_review_rows(review_path, rows)
+            return
+    raise ValueError(f"Review row not found for query_id {query_id!r}")
+
+
+def _prompt(stdin: TextIO, stdout: TextIO, message: str) -> str:
+    stdout.write(message)
+    stdout.flush()
+    line = stdin.readline()
+    if line == "":
+        raise ValueError("Interactive review input ended unexpectedly")
+    return line.rstrip("\n")
+
+
+def _render_review_item(report: ReviewNextReport, stdout: TextIO) -> None:
+    row = report.review_row
+    stdout.write("\n")
+    stdout.write(f"Query: {report.query_id}\n")
+    stdout.write(f"Style: {row.get('style', '')}\n")
+    stdout.write(f"Current status: {row.get('review_status', '')}\n")
+    stdout.write(f"Synthetic query: {row.get('query_text', '')}\n")
+    if row.get("edited_query"):
+        stdout.write(f"Edited query: {row['edited_query']}\n")
+    stdout.write(f"Source paper: {report.source_paper['title']}\n")
+    stdout.write(f"Abstract: {_truncate_text(str(report.source_paper['abstract']), 320)}\n")
+    if report.positive_papers:
+        stdout.write("Positives:\n")
+        for paper in report.positive_papers:
+            stdout.write(f"- {paper['arxiv_id']}: {paper['title']}\n")
+    if report.hard_negative_papers:
+        stdout.write("Hard negatives:\n")
+        for paper in report.hard_negative_papers:
+            stdout.write(f"- {paper['arxiv_id']}: {paper['title']}\n")
+
+
+def _truncate_text(text: str, limit: int) -> str:
+    compact = " ".join(text.split())
+    if len(compact) <= limit:
+        return compact
+    return compact[: limit - 3] + "..."
 
 
 def _resolve_papers(ids: list[str], papers_by_id: dict[str, ArxivPaper]) -> list[dict[str, object]]:
