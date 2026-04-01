@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "Local-first semantic paper search over arXiv cs.LG"
 readme = "README.md"
 requires-python = ">=3.11"
+authors = [
+    { name = "davisbuilds" },
+]
 dependencies = [
     "numpy==2.4.4",
     "pyyaml==6.0.3",

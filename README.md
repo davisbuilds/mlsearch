@@ -1,62 +1,50 @@
 # MLSearch
 
-Local-first semantic paper search over arXiv `cs.LG`, with a benchmark-first workflow and a CLI-first search tool.
+MLSearch is a local-first retrieval project for arXiv `cs.LG` papers.
 
-## Status
+The repo is built around one idea: treat paper search as a benchmarked ML system, not just a demo. The workflow fixes the corpus and evaluation harness, generates mixed-style human search queries, keeps a reviewed held-out eval split, and compares zero-shot retrieval against local fine-tuning.
 
-This repo is under active construction. The first milestone is:
+## Current Scope
 
-- build a reproducible `cs.LG` corpus for April 1, 2016 through March 31, 2026
-- generate a mixed-style semantic-search benchmark
-- establish a zero-shot retrieval baseline
-- beat that baseline with local fine-tuning
-- expose the same retrieval pipeline through a local CLI
+The current v1 target is:
 
-## Workflow
+- a reproducible `cs.LG` corpus covering April 1, 2016 through March 31, 2026
+- paper-level retrieval over title plus abstract
+- synthetic-first query generation with manual review
+- a reviewed held-out evaluation split
+- local embedding-based indexing and retrieval
+- a CLI-first search and review workflow
 
-The intended happy path is:
+This is intentionally narrow. There is no full-text PDF/HTML ingestion in v1, and the project is optimized for local iteration on Apple Silicon rather than large-scale training infrastructure.
 
-1. Build and validate the corpus.
-2. Generate benchmark queries, review a held-out slice, and finalize the reviewed eval split.
-3. Build a retrieval index and measure a zero-shot baseline.
-4. Fine-tune locally and compare against baseline.
-5. Search the local index from the CLI.
+## Why This Repo Exists
 
-## CLI
+Most paper-search prototypes stop at “embed some abstracts and query them.” MLSearch is trying to be a little stricter:
 
-The top-level command surface is:
+- corpus build is deterministic
+- evaluation is explicit and versioned
+- reviewed queries are separated from training data
+- comparisons are mechanical through a results ledger
+- manual review is part of the benchmark, not an afterthought
+
+## Install
+
+MLSearch uses `uv` and pinned dependency versions.
 
 ```bash
+uv sync --group dev
 uv run mlsearch --help
 ```
 
-Planned subcommands:
-
-- `corpus`
-- `benchmark`
-- `index`
-- `eval`
-- `train`
-- `search`
-
-Review-specific helpers:
-
-- `benchmark review-stats`
-- `benchmark review-next`
-- `benchmark review-loop`
-
-Current working slice:
+## Quickstart
 
 ```bash
-uv sync
 uv run mlsearch corpus build --limit 10
 uv run mlsearch corpus validate
 uv run mlsearch benchmark generate
 uv run mlsearch benchmark sample-review --count 4
 uv run mlsearch benchmark review-stats
-uv run mlsearch benchmark review-next
 uv run mlsearch benchmark review-loop --limit 1
-# edit data/benchmark/reviewed/review_sample.csv and set review_status to accept/edit/reject
 uv run mlsearch benchmark finalize-review
 uv run mlsearch index build
 uv run mlsearch eval baseline
@@ -65,9 +53,44 @@ uv run mlsearch train --config configs/train.yaml
 uv run mlsearch eval compare --model latest --record-results
 ```
 
+For a real run, increase the corpus and review counts after the smoke path is working locally.
+
+## Review Workflow
+
+The benchmark review flow is a core part of the project:
+
+1. Export a review sample with `benchmark sample-review`.
+2. Inspect progress with `benchmark review-stats`.
+3. Step through rows with `benchmark review-loop` or inspect one row with `benchmark review-next`.
+4. Mark each query as `accept`, `edit`, or `reject`.
+5. Finalize the reviewed split with `benchmark finalize-review`.
+
+The finalized `held_out_eval.jsonl` is the eval source for `eval baseline` and `eval compare`, and those query ids are excluded from training.
+
+## CLI Surface
+
+Top-level commands:
+
+- `corpus`
+- `benchmark`
+- `index`
+- `eval`
+- `train`
+- `search`
+
+Useful review helpers:
+
+- `benchmark review-stats`
+- `benchmark review-next`
+- `benchmark review-loop`
+
 ## Constraints
 
-- Fully local and cheap
+- fully local and cheap
 - Apple Silicon Mac mini M4 as the primary machine
-- No full-text HTML/PDF ingestion in v1
+- no full-text HTML/PDF ingestion in v1
 - CLI-first instead of web-first
+
+## License
+
+MIT. See [LICENSE](LICENSE).
