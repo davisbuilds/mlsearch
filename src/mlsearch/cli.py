@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import Callable
 
 from mlsearch.paths import PATHS
+from mlsearch.pipelines.archive_review_artifacts import archive_review_artifacts
 from mlsearch.pipelines.build_corpus import build_corpus
 from mlsearch.pipelines.finalize_review_set import finalize_review_set
-from mlsearch.pipelines.generate_queries import generate_queries
+from mlsearch.pipelines.generate_queries import compute_query_diagnostics, generate_queries, load_query_candidates
 from mlsearch.pipelines.review_workflow import review_loop, review_next, review_stats
 from mlsearch.pipelines.sample_review_set import sample_review_set
 from mlsearch.pipelines.validate_corpus import validate_corpus
@@ -61,6 +62,18 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
         help="Reviewed CSV to import into the held-out eval split.",
     )
     finalize.set_defaults(handler=_handle_benchmark_finalize_review)
+
+    archive = nested.add_parser("archive-reviewed", help="Archive the current review artifacts under a label.")
+    archive.add_argument("--label", default=None, help="Archive label. Defaults to a UTC timestamp.")
+    archive.set_defaults(handler=_handle_benchmark_archive_reviewed)
+
+    diagnostics = nested.add_parser("diagnostics", help="Summarize overlap diagnostics for generated benchmark queries.")
+    diagnostics.add_argument(
+        "--input",
+        default=str(PATHS.data_benchmark / "generated" / "query_candidates.jsonl"),
+        help="Generated query candidate JSONL to inspect.",
+    )
+    diagnostics.set_defaults(handler=_handle_benchmark_diagnostics)
 
     stats = nested.add_parser("review-stats", help="Show progress counts for the review CSV.")
     stats.add_argument(
@@ -195,6 +208,20 @@ def _handle_benchmark_sample_review(args: argparse.Namespace) -> int:
 def _handle_benchmark_finalize_review(args: argparse.Namespace) -> int:
     report = finalize_review_set(review_path=PATHS.root / args.input if not Path(args.input).is_absolute() else Path(args.input))
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_benchmark_archive_reviewed(args: argparse.Namespace) -> int:
+    report = archive_review_artifacts(label=args.label)
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_benchmark_diagnostics(args: argparse.Namespace) -> int:
+    input_path = PATHS.root / args.input if not Path(args.input).is_absolute() else Path(args.input)
+    candidates = load_query_candidates(input_path)
+    report = compute_query_diagnostics(candidates)
+    print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 
 

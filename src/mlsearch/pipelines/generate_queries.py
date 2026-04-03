@@ -28,6 +28,96 @@ STOPWORDS = {
     "using",
     "with",
 }
+ABSTRACT_NOISE = {
+    "approach",
+    "approaches",
+    "application",
+    "applications",
+    "alternative",
+    "alternatives",
+    "are",
+    "as",
+    "asks",
+    "been",
+    "being",
+    "but",
+    "can",
+    "class",
+    "classes",
+    "combine",
+    "combines",
+    "enable",
+    "enabled",
+    "especially",
+    "every",
+    "had",
+    "happens",
+    "has",
+    "have",
+    "important",
+    "introduce",
+    "introduces",
+    "investigate",
+    "investigates",
+    "is",
+    "method",
+    "methods",
+    "model",
+    "models",
+    "new",
+    "novel",
+    "our",
+    "paper",
+    "presents",
+    "present",
+    "problem",
+    "problems",
+    "occur",
+    "occurs",
+    "often",
+    "offer",
+    "offering",
+    "offers",
+    "propose",
+    "proposes",
+    "rapidly",
+    "remains",
+    "results",
+    "show",
+    "shows",
+    "studies",
+    "study",
+    "task",
+    "tasks",
+    "this",
+    "through",
+    "towards",
+    "use",
+    "used",
+    "well",
+    "whether",
+    "when",
+    "which",
+    "work",
+    "achieves",
+    "aimed",
+    "evaluate",
+    "implement",
+    "implements",
+    "long",
+    "that",
+}
+TITLE_LEAD_NOISE = {
+    "accurate",
+    "efficient",
+    "improved",
+    "new",
+    "novel",
+    "observations",
+    "online",
+    "robust",
+    "towards",
+}
 
 
 @dataclass(frozen=True)
@@ -42,24 +132,40 @@ def generate_queries(*, config_path: Path, corpus_path: Path | None = None) -> Q
     config = load_benchmark_config(config_path)
     papers = load_corpus(corpus_path or (PATHS.data_processed / "corpus.jsonl"))
     candidates = build_query_candidates(papers, config)
+    return write_query_candidates(
+        candidates,
+        generated_dir=PATHS.data_benchmark / "generated",
+        seed=config.seed,
+        max_candidates=config.max_candidates,
+    )
 
-    generated_dir = PATHS.data_benchmark / "generated"
-    generated_dir.mkdir(parents=True, exist_ok=True)
-    candidates_path = generated_dir / "query_candidates.jsonl"
-    manifest_path = generated_dir / "benchmark_manifest.json"
+
+def write_query_candidates(
+    candidates: list[QueryCandidate],
+    *,
+    generated_dir: Path | None = None,
+    seed: int = 0,
+    max_candidates: int = 0,
+) -> QueryGenerationReport:
+    resolved_generated_dir = generated_dir or (PATHS.data_benchmark / "generated")
+    resolved_generated_dir.mkdir(parents=True, exist_ok=True)
+    candidates_path = resolved_generated_dir / "query_candidates.jsonl"
+    manifest_path = resolved_generated_dir / "benchmark_manifest.json"
 
     with candidates_path.open("w", encoding="utf-8") as handle:
         for candidate in candidates:
             handle.write(json.dumps(candidate.to_dict(), sort_keys=True) + "\n")
 
     styles = count_styles(candidates)
+    diagnostics = compute_query_diagnostics(candidates)
     manifest_path.write_text(
         json.dumps(
             {
                 "count": len(candidates),
+                "diagnostics": diagnostics,
                 "styles": styles,
-                "seed": config.seed,
-                "max_candidates": config.max_candidates,
+                "seed": seed,
+                "max_candidates": max_candidates,
             },
             indent=2,
             sort_keys=True,
@@ -165,14 +271,24 @@ def lexical_hard_negatives(
 
 
 def build_keyword_query(paper: ArxivPaper) -> str:
-    tokens = ordered_keyword_tokens(paper.title)
-    if not tokens:
-        tokens = ordered_keyword_tokens(paper.abstract)
+    title_tokens = descriptive_title_tokens(paper.title)
+    abstract_tokens = ordered_abstract_tokens(clean_abstract_topic(paper.abstract))
+    salient_tokens = select_salient_ngram(abstract_tokens, set(title_tokens))
+    context_tokens = select_context_tokens(
+        salient_tokens=salient_tokens,
+        title_tokens=title_tokens,
+        abstract_tokens=abstract_tokens,
+    )
+    tokens = dedupe_tokens(salient_tokens + context_tokens)
+    if len(tokens) < 4:
+        tokens = dedupe_tokens(abstract_tokens[:5] + title_tokens[-2:])
+    if len(tokens) < 3:
+        tokens = title_tokens[:5] or abstract_tokens[:5]
     return " ".join(tokens[:5])
 
 
 def build_question_query(paper: ArxivPaper) -> str:
-    topic = normalize_title_topic(paper.title)
+    topic = build_keyword_query(paper)
     if not topic:
         return ""
     return f"what papers study {topic}?"
@@ -194,9 +310,159 @@ def ordered_keyword_tokens(text: str) -> list[str]:
     return ordered
 
 
+def descriptive_title_tokens(title: str) -> list[str]:
+    if ":" in title:
+        _, descriptive = title.split(":", maxsplit=1)
+        tokens = ordered_keyword_tokens(descriptive)
+        if tokens:
+            return trim_title_lead_noise(tokens)
+    return trim_title_lead_noise(ordered_keyword_tokens(title))
+
+
 def normalize_title_topic(title: str) -> str:
     topic = re.sub(r"[^a-z0-9\s-]", "", title.lower()).strip()
     return " ".join(topic.split())
+
+
+def clean_abstract_topic(abstract: str) -> str:
+    sentence = first_sentence(abstract)
+    lowered = sentence.lower().strip()
+    lowered = re.sub(
+        r"^(objective|background|purpose|aim|aims|motivation|introduction|methods?|results?|conclusions?)\s*:\s*",
+        "",
+        lowered,
+    )
+    prefixes = (
+        "this paper studies ",
+        "this paper presents ",
+        "this paper proposes ",
+        "this paper introduces ",
+        "this paper investigates ",
+        "this study aimed to evaluate ",
+        "this study aims to evaluate ",
+        "this study aimed to ",
+        "this study aims to ",
+        "this study evaluates ",
+        "this study investigates ",
+        "in this work we ",
+        "in this work, we ",
+        "we study ",
+        "we present ",
+        "we propose ",
+        "we introduce ",
+        "we investigate ",
+        "we evaluate ",
+        "our work studies ",
+        "our work proposes ",
+        "our method studies ",
+        "recent advances in ",
+        "recent progress in ",
+    )
+    for prefix in prefixes:
+        if lowered.startswith(prefix):
+            lowered = lowered[len(prefix) :]
+            break
+    return lowered
+
+
+def ordered_abstract_tokens(text: str) -> list[str]:
+    return [token for token in ordered_keyword_tokens(text) if token not in ABSTRACT_NOISE]
+
+
+def first_sentence(text: str) -> str:
+    parts = re.split(r"[.!?]\s+", text.strip(), maxsplit=1)
+    return parts[0] if parts else text.strip()
+
+
+def title_overlap_ratio(query_text: str, source_title: str) -> float:
+    query_tokens = keyword_tokens(query_text)
+    title_tokens = keyword_tokens(source_title)
+    if not query_tokens or not title_tokens:
+        return 0.0
+    return len(query_tokens & title_tokens) / len(query_tokens | title_tokens)
+
+
+def select_salient_ngram(abstract_tokens: list[str], title_token_set: set[str]) -> list[str]:
+    if not abstract_tokens:
+        return []
+
+    best_tokens: list[str] = []
+    best_score = float("-inf")
+    for width in range(2, min(4, len(abstract_tokens)) + 1):
+        for start in range(0, len(abstract_tokens) - width + 1):
+            tokens = abstract_tokens[start : start + width]
+            novelty = sum(1 for token in tokens if token not in title_token_set)
+            title_overlap = width - novelty
+            score = (novelty * 3.0) + width - (title_overlap * 0.75)
+            if novelty == 0:
+                score -= 2.0
+            if score > best_score:
+                best_score = score
+                best_tokens = tokens
+    return best_tokens or abstract_tokens[:3]
+
+
+def select_context_tokens(
+    *,
+    salient_tokens: list[str],
+    title_tokens: list[str],
+    abstract_tokens: list[str],
+) -> list[str]:
+    salient_set = set(salient_tokens)
+    abstract_set = set(abstract_tokens)
+    title_context = [
+        token
+        for token in title_tokens
+        if token in abstract_set and token not in salient_set
+    ]
+    if len(title_context) >= 2:
+        return title_context[-2:]
+    fallback_context = [
+        token
+        for token in abstract_tokens
+        if token not in salient_set
+    ]
+    if title_context:
+        return dedupe_tokens(fallback_context + title_context)[:2]
+    return fallback_context[:2]
+
+
+def trim_title_lead_noise(tokens: list[str]) -> list[str]:
+    trimmed = list(tokens)
+    while trimmed and trimmed[0] in TITLE_LEAD_NOISE:
+        trimmed = trimmed[1:]
+    return trimmed or tokens
+
+
+def dedupe_tokens(tokens: list[str]) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for token in tokens:
+        if token in seen:
+            continue
+        seen.add(token)
+        ordered.append(token)
+    return ordered
+
+
+def compute_query_diagnostics(candidates: list[QueryCandidate]) -> dict[str, object]:
+    by_style: dict[str, list[float]] = defaultdict(list)
+    for candidate in candidates:
+        by_style[candidate.style].append(title_overlap_ratio(candidate.query_text, candidate.source_title))
+
+    style_overlap: dict[str, dict[str, float | int]] = {}
+    for style, overlaps in sorted(by_style.items()):
+        mean_overlap = sum(overlaps) / len(overlaps) if overlaps else 0.0
+        style_overlap[style] = {
+            "count": len(overlaps),
+            "max_title_overlap": max(overlaps) if overlaps else 0.0,
+            "mean_title_overlap": mean_overlap,
+            "queries_at_or_above_0_8_overlap": sum(1 for item in overlaps if item >= 0.8),
+        }
+    return {
+        "count": len(candidates),
+        "style_overlap": style_overlap,
+    }
 
 
 def count_styles(candidates: list[QueryCandidate]) -> dict[str, int]:

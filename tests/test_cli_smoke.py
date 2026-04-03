@@ -78,3 +78,19 @@ def test_benchmark_review_loop_parser_accepts_limit_and_query_id() -> None:
     assert args.input == "data/benchmark/reviewed/review_sample.csv"
     assert args.query_id == "paper-1-question"
     assert args.limit == 3
+
+
+def test_benchmark_archive_reviewed_parser_accepts_label() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["benchmark", "archive-reviewed", "--label", "pre-hardening"])
+    assert args.command == "benchmark"
+    assert args.benchmark_command == "archive-reviewed"
+    assert args.label == "pre-hardening"
+
+
+def test_benchmark_diagnostics_parser_accepts_input_override() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["benchmark", "diagnostics", "--input", "data/benchmark/generated/query_candidates.jsonl"])
+    assert args.command == "benchmark"
+    assert args.benchmark_command == "diagnostics"
+    assert args.input == "data/benchmark/generated/query_candidates.jsonl"

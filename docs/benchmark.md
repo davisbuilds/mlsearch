@@ -26,14 +26,19 @@ Each query candidate carries:
 - one positive paper id
 - lexical hard negatives from overlapping title tokens
 
+The generated manifest also includes overlap diagnostics so you can quantify when the synthetic query pool is drifting too close to source-paper titles.
+
 ## Review Workflow
 
-1. Run `benchmark sample-review` to export a stratified CSV sample.
-2. Run `benchmark review-stats` to see pending and completed counts by status and style.
-3. Run `benchmark review-next` to inspect the next pending row with source-paper context.
-4. Optionally use `benchmark review-loop` to step through rows and write `accept`, `edit`, or `reject` decisions back to the CSV interactively.
-5. For `edit`, fill in both `edited_query` and `relevant_paper_ids`.
-6. Run `benchmark finalize-review` to materialize the canonical held-out eval split.
+1. Optionally run `benchmark archive-reviewed --label <name>` before regenerating candidates or replacing the current review sample.
+2. Run `benchmark generate` to rebuild the candidate pool.
+3. Run `benchmark diagnostics` to inspect title-overlap statistics from the generated manifest.
+4. Run `benchmark sample-review` to export a stratified CSV sample.
+5. Run `benchmark review-stats` to see pending and completed counts by status and style.
+6. Run `benchmark review-next` to inspect the next pending row with source-paper context.
+7. Optionally use `benchmark review-loop` to step through rows and write `accept`, `edit`, or `reject` decisions back to the CSV interactively.
+8. For `edit`, fill in both `edited_query` and `relevant_paper_ids`.
+9. Run `benchmark finalize-review` to materialize the canonical held-out eval split.
 
 The finalized JSONL is the only reviewed artifact used by `eval baseline` and `eval compare`.
 

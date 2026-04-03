@@ -42,6 +42,7 @@ uv run mlsearch --help
 uv run mlsearch corpus build --limit 10
 uv run mlsearch corpus validate
 uv run mlsearch benchmark generate
+uv run mlsearch benchmark diagnostics
 uv run mlsearch benchmark sample-review --count 4
 uv run mlsearch benchmark review-stats
 uv run mlsearch benchmark review-loop --limit 1
@@ -59,11 +60,13 @@ For a real run, increase the corpus and review counts after the smoke path is wo
 
 The benchmark review flow is a core part of the project:
 
-1. Export a review sample with `benchmark sample-review`.
-2. Inspect progress with `benchmark review-stats`.
-3. Step through rows with `benchmark review-loop` or inspect one row with `benchmark review-next`.
-4. Mark each query as `accept`, `edit`, or `reject`.
-5. Finalize the reviewed split with `benchmark finalize-review`.
+1. Optionally archive the current reviewed artifacts with `benchmark archive-reviewed --label <name>`.
+2. Generate candidates with `benchmark generate` and inspect overlap with `benchmark diagnostics`.
+3. Export a review sample with `benchmark sample-review`.
+4. Inspect progress with `benchmark review-stats`.
+5. Step through rows with `benchmark review-loop` or inspect one row with `benchmark review-next`.
+6. Mark each query as `accept`, `edit`, or `reject`.
+7. Finalize the reviewed split with `benchmark finalize-review`.
 
 The finalized `held_out_eval.jsonl` is the eval source for `eval baseline` and `eval compare`, and those query ids are excluded from training.
 
@@ -80,6 +83,8 @@ Top-level commands:
 
 Useful review helpers:
 
+- `benchmark archive-reviewed`
+- `benchmark diagnostics`
 - `benchmark review-stats`
 - `benchmark review-next`
 - `benchmark review-loop`
