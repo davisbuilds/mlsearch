@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -33,6 +33,7 @@ class BenchmarkConfig:
 class TrainConfig:
     base_model_name: str = "BAAI/bge-small-en-v1.5"
     device: str = "auto"
+    seed: int = 42
     num_epochs: int = 1
     batch_size: int = 8
     learning_rate: float = 2e-5
@@ -96,6 +97,14 @@ def load_train_config(path: Path) -> TrainConfig:
     if merged["device"] not in {"auto", "cpu", "mps", "cuda"}:
         raise ValueError("Train config device must be one of: auto, cpu, mps, cuda")
     return TrainConfig(**merged)
+
+
+def merge_train_config(config: TrainConfig, **overrides: Any) -> TrainConfig:
+    unknown = sorted(set(overrides) - set(asdict(config)))
+    if unknown:
+        names = ", ".join(unknown)
+        raise ValueError(f"Unknown train config overrides: {names}")
+    return replace(config, **overrides)
 
 
 def _normalize_date_value(value: Any) -> str:

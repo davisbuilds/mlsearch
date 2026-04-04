@@ -13,6 +13,7 @@ def test_help_renders(capsys: pytest.CaptureFixture[str]) -> None:
     output = capsys.readouterr().out
     assert "corpus" in output
     assert "benchmark" in output
+    assert "experiment" in output
     assert "search" in output
 
 
@@ -94,3 +95,41 @@ def test_benchmark_diagnostics_parser_accepts_input_override() -> None:
     assert args.command == "benchmark"
     assert args.benchmark_command == "diagnostics"
     assert args.input == "data/benchmark/generated/query_candidates.jsonl"
+
+
+def test_experiment_sweep_parser_accepts_grid_arguments() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(
+        [
+            "experiment",
+            "sweep",
+            "--config",
+            "configs/train.yaml",
+            "--reference-model",
+            "latest",
+            "--learning-rate",
+            "1e-5",
+            "2e-5",
+            "--num-epochs",
+            "1",
+            "2",
+            "--batch-size",
+            "4",
+            "--max-examples",
+            "1000",
+            "2000",
+            "--seed",
+            "42",
+            "43",
+            "--record-results",
+        ]
+    )
+    assert args.command == "experiment"
+    assert args.experiment_command == "sweep"
+    assert args.reference_model == "latest"
+    assert args.learning_rates == [1e-5, 2e-5]
+    assert args.num_epochs == [1, 2]
+    assert args.batch_sizes == [4]
+    assert args.max_examples == [1000, 2000]
+    assert args.seeds == [42, 43]
+    assert args.record_results is True

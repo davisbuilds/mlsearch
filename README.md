@@ -52,6 +52,7 @@ uv run mlsearch eval baseline
 uv run mlsearch search "few-shot classification" --top-k 3
 uv run mlsearch train --config configs/train.yaml
 uv run mlsearch eval compare --model latest --record-results
+uv run mlsearch experiment sweep --reference-model latest --learning-rate 1e-5 2e-5 --num-epochs 1 2 --record-results
 ```
 
 For a real run, increase the corpus and review counts after the smoke path is working locally.
@@ -78,6 +79,7 @@ Top-level commands:
 - `benchmark`
 - `index`
 - `eval`
+- `experiment`
 - `train`
 - `search`
 

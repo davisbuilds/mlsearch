@@ -25,6 +25,16 @@ class BaselineEvalReport:
     metrics: dict[str, float]
 
 
+@dataclass(frozen=True)
+class ModelEvalReport:
+    report_path: str
+    candidates_path: str
+    index_dir: str
+    model_ref: str
+    query_count: int
+    metrics: dict[str, float]
+
+
 def run_baseline_eval(
     *,
     candidates_path: Path | None = None,
@@ -51,11 +61,8 @@ def run_baseline_eval(
     )
 
 
-def run_compare_eval(*, model_ref: str, record_results: bool) -> dict[str, object]:
-    checkpoint = latest_checkpoint() if model_ref == "latest" else (PATHS.artifacts_models / model_ref)
-    if not checkpoint.exists():
-        raise FileNotFoundError(f"Model checkpoint not found: {checkpoint}")
-
+def run_model_eval(*, model_ref: str | Path, top_k: int = 10) -> ModelEvalReport:
+    checkpoint = _resolve_checkpoint(model_ref)
     compare_index_dir = PATHS.artifacts_index / checkpoint.name
     build_index(output_dir=compare_index_dir, model_name=str(checkpoint))
     candidate_path, candidates = resolve_eval_candidates(
@@ -68,24 +75,36 @@ def run_compare_eval(*, model_ref: str, record_results: bool) -> dict[str, objec
         index_dir=compare_index_dir,
         output_dir=PATHS.artifacts_results,
         report_prefix="compare",
-        top_k=10,
+        top_k=top_k,
     )
+    return ModelEvalReport(
+        report_path=str(report_path),
+        candidates_path=str(candidate_path),
+        index_dir=str(compare_index_dir),
+        model_ref=checkpoint.name,
+        query_count=len(candidates),
+        metrics=candidate_metrics,
+    )
+
+
+def run_compare_eval(*, model_ref: str, record_results: bool) -> dict[str, object]:
+    model_report = run_model_eval(model_ref=model_ref, top_k=10)
     baseline_report = load_latest_report("baseline")
-    ensure_baseline_compatible(baseline_report, candidates_path=candidate_path)
+    ensure_baseline_compatible(baseline_report, candidates_path=Path(model_report.candidates_path))
     baseline_metrics = baseline_report["metrics"]
-    comparison = compare_metric_sets(candidate_metrics, baseline_metrics)
+    comparison = compare_metric_sets(model_report.metrics, baseline_metrics)
     payload = {
         "baseline_metrics": baseline_metrics,
-        "candidate_metrics": candidate_metrics,
+        "candidate_metrics": model_report.metrics,
         "comparison": comparison,
-        "model_ref": checkpoint.name,
-        "report_path": str(report_path),
+        "model_ref": model_report.model_ref,
+        "report_path": model_report.report_path,
     }
     if record_results:
         append_result(
             PATHS.root / "results.tsv",
-            model_ref=checkpoint.name,
-            metrics=candidate_metrics,
+            model_ref=model_report.model_ref,
+            metrics=model_report.metrics,
             status=str(comparison["status"]),
             description="local fine-tuned compare run",
         )
@@ -183,3 +202,15 @@ def ensure_baseline_compatible(baseline_report: dict[str, object], *, candidates
         raise ValueError(
             "Latest baseline report targets a different benchmark split; rerun `eval baseline` before compare."
         )
+
+
+def _resolve_checkpoint(model_ref: str | Path) -> Path:
+    if isinstance(model_ref, Path):
+        checkpoint = model_ref
+    elif model_ref == "latest":
+        checkpoint = latest_checkpoint()
+    else:
+        checkpoint = PATHS.artifacts_models / model_ref
+    if not checkpoint.exists():
+        raise FileNotFoundError(f"Model checkpoint not found: {checkpoint}")
+    return checkpoint

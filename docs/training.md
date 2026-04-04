@@ -24,11 +24,14 @@ Supported values:
 
 `auto` reuses the runtime device detection path and prefers `mps` on Apple Silicon, then `cuda`, then `cpu`.
 
+The tracked training config now also carries a `seed`, and training applies that seed before dataloader shuffling and optimization so experiment runs are easier to compare fairly.
+
 ## Commands
 
 ```bash
 uv run mlsearch train --config configs/train.yaml
 uv run mlsearch eval compare --model latest --record-results
+uv run mlsearch experiment sweep --reference-model latest --learning-rate 1e-5 2e-5 --num-epochs 1 2 --record-results
 ```
 
 ## Split Discipline
@@ -36,3 +39,15 @@ uv run mlsearch eval compare --model latest --record-results
 - Training examples come from generated query candidates.
 - Any query promoted into `data/benchmark/reviewed/held_out_eval.jsonl` is excluded from training.
 - `eval compare` requires a baseline report built against the same benchmark split and will refuse to compare against a stale baseline.
+
+## Sweep Loop
+
+`experiment sweep` is the first constrained autoresearch loop in the repo.
+
+- It reads a base config from `configs/train.yaml`.
+- It can start from the zero-shot baseline or from an existing checkpoint with `--reference-model`.
+- It expands a small Cartesian grid over safe training knobs: `learning_rate`, `num_epochs`, `batch_size`, `max_examples`, and `seed`.
+- It trains each variant locally, evaluates it on the reviewed held-out split, and compares it against the current champion metrics.
+- It can append every run to `results.tsv` with `--record-results`.
+
+The intended use is small and disciplined. Prefer 3-8 runs over a reviewed benchmark that already has real headroom, rather than wide sweeps against a trivial split.

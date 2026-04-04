@@ -26,6 +26,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_benchmark_parser(subparsers)
     _add_index_parser(subparsers)
     _add_eval_parser(subparsers)
+    _add_experiment_parser(subparsers)
     _add_train_parser(subparsers)
     _add_search_parser(subparsers)
 
@@ -153,6 +154,30 @@ def _add_train_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
     parser = subparsers.add_parser("train", help="Train a local retriever.")
     parser.add_argument("--config", default="configs/train.yaml", help="Training config path.")
     parser.set_defaults(handler=_handle_train)
+
+
+def _add_experiment_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    parser = subparsers.add_parser("experiment", help="Run constrained local autoresearch loops.")
+    nested = parser.add_subparsers(dest="experiment_command", required=True)
+
+    sweep = nested.add_parser("sweep", help="Sweep safe training hyperparameters against the reviewed eval split.")
+    sweep.add_argument("--config", default="configs/train.yaml", help="Base training config path.")
+    sweep.add_argument(
+        "--reference-model",
+        default="baseline",
+        help="Starting champion for the sweep: baseline, latest, or a model checkpoint name.",
+    )
+    sweep.add_argument("--learning-rate", dest="learning_rates", type=float, nargs="+", default=None)
+    sweep.add_argument("--num-epochs", dest="num_epochs", type=int, nargs="+", default=None)
+    sweep.add_argument("--batch-size", dest="batch_sizes", type=int, nargs="+", default=None)
+    sweep.add_argument("--max-examples", dest="max_examples", type=int, nargs="+", default=None)
+    sweep.add_argument("--seed", dest="seeds", type=int, nargs="+", default=None)
+    sweep.add_argument(
+        "--record-results",
+        action="store_true",
+        help="Append each sweep run to results.tsv.",
+    )
+    sweep.set_defaults(handler=_handle_experiment_sweep)
 
 
 def _add_search_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -283,6 +308,23 @@ def _handle_train(args: argparse.Namespace) -> int:
     from mlsearch.training.train_retriever import train_retriever
 
     report = train_retriever(config_path=PATHS.root / args.config)
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_experiment_sweep(args: argparse.Namespace) -> int:
+    from mlsearch.experiments.sweep import run_experiment_sweep
+
+    report = run_experiment_sweep(
+        config_path=PATHS.root / args.config,
+        reference_model=args.reference_model,
+        learning_rates=args.learning_rates,
+        num_epochs=args.num_epochs,
+        batch_sizes=args.batch_sizes,
+        max_examples=args.max_examples,
+        seeds=args.seeds,
+        record_results=args.record_results,
+    )
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
     return 0
 

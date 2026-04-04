@@ -28,6 +28,15 @@ def test_load_train_config_accepts_device_override(tmp_path: Path) -> None:
     assert config.device == "mps"
 
 
+def test_load_train_config_accepts_seed_override(tmp_path: Path) -> None:
+    path = tmp_path / "train.yaml"
+    path.write_text("seed: 7\n", encoding="utf-8")
+
+    config = load_train_config(path)
+
+    assert config.seed == 7
+
+
 def test_load_train_config_rejects_unknown_device(tmp_path: Path) -> None:
     path = tmp_path / "train.yaml"
     path.write_text("device: tpu\n", encoding="utf-8")
