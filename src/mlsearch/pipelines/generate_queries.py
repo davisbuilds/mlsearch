@@ -29,6 +29,7 @@ STOPWORDS = {
     "with",
 }
 ABSTRACT_NOISE = {
+    "almost",
     "approach",
     "approaches",
     "application",
@@ -46,10 +47,15 @@ ABSTRACT_NOISE = {
     "classes",
     "combine",
     "combines",
+    "deserved",
+    "digital",
     "enable",
     "enabled",
+    "enjoying",
+    "era",
     "especially",
     "every",
+    "gained",
     "had",
     "happens",
     "has",
@@ -83,6 +89,7 @@ ABSTRACT_NOISE = {
     "rapidly",
     "remains",
     "results",
+    "short",
     "show",
     "shows",
     "studies",
@@ -90,8 +97,12 @@ ABSTRACT_NOISE = {
     "task",
     "tasks",
     "this",
+    "too",
     "through",
+    "technique",
+    "techniques",
     "towards",
+    "two",
     "use",
     "used",
     "well",
@@ -105,11 +116,16 @@ ABSTRACT_NOISE = {
     "implement",
     "implements",
     "long",
+    "most",
+    "or",
+    "people",
+    "related",
     "that",
 }
 TITLE_LEAD_NOISE = {
     "accurate",
     "efficient",
+    "frontier",
     "improved",
     "new",
     "novel",
@@ -118,6 +134,16 @@ TITLE_LEAD_NOISE = {
     "robust",
     "towards",
 }
+TITLE_TAIL_NOISE = {
+    "approach",
+    "paper",
+    "study",
+    "tool",
+    "tools",
+}
+TITLE_CONNECTORS = ("for", "using", "via", "with", "in")
+QUERY_PREFIXES = ("papers on", "research on", "work on")
+QUERY_NOISE = ABSTRACT_NOISE | {"tool", "tools", "visualisation", "visualization"}
 
 
 @dataclass(frozen=True)
@@ -273,15 +299,25 @@ def lexical_hard_negatives(
 def build_keyword_query(paper: ArxivPaper) -> str:
     title_tokens = descriptive_title_tokens(paper.title)
     abstract_tokens = ordered_abstract_tokens(clean_abstract_topic(paper.abstract))
-    salient_tokens = select_salient_ngram(abstract_tokens, set(title_tokens))
-    context_tokens = select_context_tokens(
-        salient_tokens=salient_tokens,
+    title_query_tokens = build_title_query_tokens(title_tokens)
+    abstract_query_tokens = build_abstract_query_tokens(
         title_tokens=title_tokens,
         abstract_tokens=abstract_tokens,
     )
-    tokens = dedupe_tokens(salient_tokens + context_tokens)
-    if len(tokens) < 4:
-        tokens = dedupe_tokens(abstract_tokens[:5] + title_tokens[-2:])
+
+    if title_query_tokens and is_clean_title_query(title_query_tokens):
+        tokens = title_query_tokens[:5]
+    elif abstract_query_tokens:
+        tokens = abstract_query_tokens[:5]
+    else:
+        tokens = select_best_query_tokens(
+            candidates=[
+                title_query_tokens,
+                abstract_query_tokens,
+                dedupe_tokens(abstract_tokens[:5] + title_tokens[-2:]),
+            ],
+            source_title=paper.title,
+        )
     if len(tokens) < 3:
         tokens = title_tokens[:5] or abstract_tokens[:5]
     return " ".join(tokens[:5])
@@ -291,7 +327,8 @@ def build_question_query(paper: ArxivPaper) -> str:
     topic = build_keyword_query(paper)
     if not topic:
         return ""
-    return f"what papers study {topic}?"
+    prefix = QUERY_PREFIXES[sum(ord(char) for char in paper.arxiv_id) % len(QUERY_PREFIXES)]
+    return f"{prefix} {topic}"
 
 
 def keyword_tokens(text: str) -> set[str]:
@@ -400,6 +437,86 @@ def select_salient_ngram(abstract_tokens: list[str], title_token_set: set[str]) 
                 best_score = score
                 best_tokens = tokens
     return best_tokens or abstract_tokens[:3]
+
+
+def build_abstract_query_tokens(*, title_tokens: list[str], abstract_tokens: list[str]) -> list[str]:
+    salient_tokens = select_salient_ngram(abstract_tokens, set(title_tokens))
+    context_tokens = select_context_tokens(
+        salient_tokens=salient_tokens,
+        title_tokens=title_tokens,
+        abstract_tokens=abstract_tokens,
+    )
+    tokens = dedupe_tokens(salient_tokens + context_tokens)
+    if len(tokens) < 4:
+        tokens = dedupe_tokens(abstract_tokens[:5] + title_tokens[-2:])
+    return tokens[:5]
+
+
+def build_title_query_tokens(title_tokens: list[str]) -> list[str]:
+    if not title_tokens:
+        return []
+
+    connector_index = next((index for index, token in enumerate(title_tokens) if token in TITLE_CONNECTORS), -1)
+    if connector_index == -1:
+        return trim_title_tail_noise(trim_title_lead_noise(title_tokens))[:5]
+
+    left = trim_title_tail_noise(title_tokens[:connector_index])
+    right = trim_title_tail_noise(title_tokens[connector_index + 1 :])
+    connector = title_tokens[connector_index]
+
+    if connector == "for":
+        if left and left[-1] in {"framework", "frameworks", "tool", "tools", "system", "systems"} and right:
+            return dedupe_tokens(right[:4] + [left[-1]])
+        if right:
+            return dedupe_tokens(right[:4] + left[-2:])
+    if connector in {"using", "via", "with"}:
+        if left and right:
+            return dedupe_tokens(left[:2] + right[:3])
+        if left:
+            return left[:5]
+    if connector == "in":
+        if left and right:
+            return dedupe_tokens(left[:4] + right[:2])
+
+    return trim_title_tail_noise((left + right)[:5])
+
+
+def trim_title_tail_noise(tokens: list[str]) -> list[str]:
+    trimmed = list(tokens)
+    while trimmed and trimmed[-1] in TITLE_TAIL_NOISE:
+        trimmed = trimmed[:-1]
+    return trimmed or tokens
+
+
+def select_best_query_tokens(*, candidates: list[list[str]], source_title: str) -> list[str]:
+    best_tokens: list[str] = []
+    best_score = float("-inf")
+    for candidate in candidates:
+        tokens = dedupe_tokens(candidate)[:5]
+        if len(tokens) < 3:
+            continue
+        overlap = title_overlap_ratio(" ".join(tokens), source_title)
+        score = len(tokens) * 1.5
+        if 0.15 <= overlap <= 0.65:
+            score += 2.5
+        else:
+            score -= abs(overlap - 0.4) * 4.0
+        score -= sum(1.25 for token in tokens if token in QUERY_NOISE)
+        if len(set(tokens)) != len(tokens):
+            score -= 1.0
+        if score > best_score:
+            best_score = score
+            best_tokens = tokens
+    return best_tokens
+
+
+def is_clean_title_query(tokens: list[str]) -> bool:
+    if len(tokens) < 3:
+        return False
+    if any(token in {"tool", "tools", "visualisation", "visualization"} for token in tokens):
+        return False
+    noise_count = sum(1 for token in tokens if token in QUERY_NOISE)
+    return noise_count <= 1
 
 
 def select_context_tokens(

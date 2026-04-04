@@ -52,8 +52,8 @@ def test_question_query_looks_human_readable() -> None:
         BenchmarkConfig(max_candidates=10, negatives_per_query=1),
     )
     question = next(candidate for candidate in candidates if candidate.style == "question")
-    assert question.query_text.startswith("what papers study ")
-    assert question.query_text.endswith("?")
+    assert question.query_text.startswith(("papers on ", "research on ", "work on "))
+    assert question.query_text == question.query_text.lower()
 
 
 def test_build_query_candidates_uses_abstract_signal_to_reduce_title_copy() -> None:
@@ -81,6 +81,33 @@ def test_build_query_candidates_uses_abstract_signal_to_reduce_title_copy() -> N
     assert "visiored" not in keyword.query_text
     assert "interactive visualization dashboards" in question.query_text
     assert title_overlap_ratio(question.query_text, paper.title) < 0.7
+
+
+def test_build_query_candidates_prefers_title_topics_over_abstract_intro_debris() -> None:
+    paper = ArxivPaper(
+        arxiv_id="2",
+        title="MLSys: The New Frontier of Machine Learning Systems",
+        abstract=(
+            "Machine learning techniques are enjoying rapidly increasing adoption. "
+            "However, designing and implementing the systems that support ML models "
+            "in real-world deployments remains a significant obstacle."
+        ),
+        authors=("Alice",),
+        categories=("cs.LG",),
+        primary_category="cs.LG",
+        published="2020-01-01T00:00:00Z",
+        updated="2020-01-01T00:00:00Z",
+        abs_url="https://arxiv.org/abs/2",
+        pdf_url=None,
+    )
+
+    candidates = build_query_candidates([paper], BenchmarkConfig(max_candidates=10, negatives_per_query=1))
+    keyword = next(candidate for candidate in candidates if candidate.style == "keyword")
+    question = next(candidate for candidate in candidates if candidate.style == "question")
+
+    assert "rapidly increasing adoption" not in keyword.query_text
+    assert "machine learning systems" in keyword.query_text
+    assert question.query_text.startswith(("papers on ", "research on ", "work on "))
 
 
 def test_compute_query_diagnostics_summarizes_overlap_by_style() -> None:
