@@ -3,3 +3,7 @@ timestamp	model_ref	recall@10	mrr	ndcg@10	status	description
 2026-03-31T12:34:22Z	retriever-20260331T123410Z	1.000000	1.000000	1.000000	discard	local fine-tuned compare run
 2026-04-04T22:44:48Z	retriever-20260404T224033Z	1.000000	0.912262	0.931262	discard	local fine-tuned compare run
 2026-04-04T22:53:34Z	retriever-20260404T225128Z	1.000000	0.961111	0.971031	keep	local fine-tuned compare run
+2026-04-04T23:06:46Z	retriever-20260404T230536Z	1.000000	0.936111	0.952054	discard	experiment sweep run vs=retriever-20260404T225128Z lr=1e-05 epochs=1 batch=4 max_examples=2000 seed=42
+2026-04-04T23:09:03Z	retriever-20260404T230646Z	1.000000	0.920833	0.939227	discard	experiment sweep run vs=retriever-20260404T225128Z lr=1e-05 epochs=2 batch=4 max_examples=2000 seed=42
+2026-04-04T23:10:14Z	retriever-20260404T230904Z	1.000000	0.931944	0.948213	discard	experiment sweep run vs=retriever-20260404T225128Z lr=2e-05 epochs=1 batch=4 max_examples=2000 seed=42
+2026-04-04T23:12:19Z	retriever-20260404T231014Z	0.966667	0.920833	0.931546	discard	experiment sweep run vs=retriever-20260404T225128Z lr=2e-05 epochs=2 batch=4 max_examples=2000 seed=42
