@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from mlsearch.benchmark.review import load_reviewed_queries
 from mlsearch.benchmark.schema import QueryCandidate, ReviewedQuery
@@ -93,12 +94,30 @@ def run_compare_eval(*, model_ref: str, record_results: bool) -> dict[str, objec
     ensure_baseline_compatible(baseline_report, candidates_path=Path(model_report.candidates_path))
     baseline_metrics = baseline_report["metrics"]
     comparison = compare_metric_sets(model_report.metrics, baseline_metrics)
+    candidate_report_payload = json.loads(Path(model_report.report_path).read_text(encoding="utf-8"))
+    query_deltas = build_query_delta_report(
+        baseline_queries=list(baseline_report.get("per_query", [])),
+        candidate_queries=list(candidate_report_payload.get("per_query", [])),
+    )
+    candidate_report_payload.update(
+        {
+            "baseline_metrics": baseline_metrics,
+            "comparison": comparison,
+            "model_ref": model_report.model_ref,
+            "query_deltas": query_deltas,
+        }
+    )
+    Path(model_report.report_path).write_text(
+        json.dumps(candidate_report_payload, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
     payload = {
         "baseline_metrics": baseline_metrics,
         "candidate_metrics": model_report.metrics,
         "comparison": comparison,
         "model_ref": model_report.model_ref,
         "report_path": model_report.report_path,
+        "query_delta_count": len(query_deltas),
     }
     if record_results:
         append_result(
@@ -129,6 +148,36 @@ def aggregate_metrics(candidates: list[QueryCandidate | ReviewedQuery], hits_per
     }
 
 
+def build_query_breakdowns(
+    candidates: list[QueryCandidate | ReviewedQuery],
+    hits_per_query: list[list[object]],
+    *,
+    top_k: int,
+) -> list[dict[str, Any]]:
+    breakdowns: list[dict[str, Any]] = []
+    for candidate, hits in zip(candidates, hits_per_query, strict=True):
+        result_ids = [hit.arxiv_id for hit in hits]
+        relevant_ids = set(_relevant_ids(candidate))
+        top_hit = hits[0] if hits else None
+        breakdowns.append(
+            {
+                "query_id": candidate.query_id,
+                "query_text": candidate.query_text,
+                "style": candidate.style,
+                "source_paper_id": candidate.source_paper_id,
+                "relevant_paper_ids": sorted(relevant_ids),
+                "top_hit_arxiv_id": top_hit.arxiv_id if top_hit is not None else None,
+                "top_hit_title": top_hit.title if top_hit is not None else None,
+                "top_hit_score": top_hit.score if top_hit is not None else None,
+                "relevant_rank": _relevant_rank(result_ids, relevant_ids),
+                "recall_at_k": recall_at_k(result_ids, relevant_ids, top_k),
+                "reciprocal_rank": reciprocal_rank(result_ids, relevant_ids),
+                "ndcg_at_k": ndcg_at_k(result_ids, relevant_ids, top_k),
+            }
+        )
+    return breakdowns
+
+
 def _run_eval(
     *,
     candidates: list[QueryCandidate | ReviewedQuery],
@@ -144,6 +193,7 @@ def _run_eval(
         index_dir=index_dir,
     )
     metrics = aggregate_metrics(candidates, hits_per_query, top_k=top_k)
+    query_breakdowns = build_query_breakdowns(candidates, hits_per_query, top_k=top_k)
     output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     report_path = output_dir / f"{report_prefix}-{timestamp}.json"
@@ -153,6 +203,7 @@ def _run_eval(
                 "candidates_path": str(candidates_path),
                 "query_count": len(candidates),
                 "metrics": metrics,
+                "per_query": query_breakdowns,
                 "top_k": top_k,
                 "index_dir": str(index_dir),
             },
@@ -204,6 +255,48 @@ def ensure_baseline_compatible(baseline_report: dict[str, object], *, candidates
         )
 
 
+def build_query_delta_report(
+    baseline_queries: list[dict[str, Any]],
+    candidate_queries: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    baseline_by_id = {str(item["query_id"]): item for item in baseline_queries}
+    deltas: list[dict[str, Any]] = []
+    for candidate_item in candidate_queries:
+        query_id = str(candidate_item["query_id"])
+        baseline_item = baseline_by_id.get(query_id)
+        if baseline_item is None:
+            continue
+        baseline_rank = _maybe_int(baseline_item.get("relevant_rank"))
+        candidate_rank = _maybe_int(candidate_item.get("relevant_rank"))
+        deltas.append(
+            {
+                "query_id": query_id,
+                "query_text": candidate_item["query_text"],
+                "style": candidate_item["style"],
+                "source_paper_id": candidate_item["source_paper_id"],
+                "baseline_relevant_rank": baseline_rank,
+                "candidate_relevant_rank": candidate_rank,
+                "delta_relevant_rank": _delta_rank(baseline_rank, candidate_rank),
+                "baseline_reciprocal_rank": baseline_item["reciprocal_rank"],
+                "candidate_reciprocal_rank": candidate_item["reciprocal_rank"],
+                "delta_reciprocal_rank": candidate_item["reciprocal_rank"] - baseline_item["reciprocal_rank"],
+                "baseline_top_hit_arxiv_id": baseline_item.get("top_hit_arxiv_id"),
+                "candidate_top_hit_arxiv_id": candidate_item.get("top_hit_arxiv_id"),
+                "baseline_top_hit_title": baseline_item.get("top_hit_title"),
+                "candidate_top_hit_title": candidate_item.get("top_hit_title"),
+                "top_hit_changed": baseline_item.get("top_hit_arxiv_id") != candidate_item.get("top_hit_arxiv_id"),
+            }
+        )
+    return sorted(
+        deltas,
+        key=lambda item: (
+            -item["delta_reciprocal_rank"],
+            -(item["delta_relevant_rank"] or 0),
+            item["query_id"],
+        ),
+    )
+
+
 def _resolve_checkpoint(model_ref: str | Path) -> Path:
     if isinstance(model_ref, Path):
         checkpoint = model_ref
@@ -214,3 +307,22 @@ def _resolve_checkpoint(model_ref: str | Path) -> Path:
     if not checkpoint.exists():
         raise FileNotFoundError(f"Model checkpoint not found: {checkpoint}")
     return checkpoint
+
+
+def _relevant_rank(result_ids: list[str], relevant_ids: set[str]) -> int | None:
+    for index, result_id in enumerate(result_ids, start=1):
+        if result_id in relevant_ids:
+            return index
+    return None
+
+
+def _maybe_int(value: object) -> int | None:
+    if value is None:
+        return None
+    return int(value)
+
+
+def _delta_rank(baseline_rank: int | None, candidate_rank: int | None) -> int | None:
+    if baseline_rank is None or candidate_rank is None:
+        return None
+    return baseline_rank - candidate_rank

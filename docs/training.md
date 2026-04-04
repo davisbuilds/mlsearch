@@ -34,6 +34,9 @@ uv run mlsearch eval compare --model latest --record-results
 uv run mlsearch experiment sweep --reference-model latest --learning-rate 1e-5 2e-5 --num-epochs 1 2 --record-results
 ```
 
+Baseline and compare reports in `artifacts/results/` now include per-query breakdowns.
+Compare reports also include `query_deltas`, which make it easy to see which reviewed queries improved, stayed flat, or regressed versus baseline.
+
 ## Split Discipline
 
 - Training examples come from generated query candidates.
