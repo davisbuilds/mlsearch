@@ -6,10 +6,12 @@ from pathlib import Path
 
 import torch
 from sentence_transformers import InputExample, SentenceTransformer, losses
+from sentence_transformers.util import batch_to_device
 from torch.utils.data import DataLoader
 
 from mlsearch.config import load_train_config
 from mlsearch.paths import PATHS
+from mlsearch.retrieval.embedder import detect_device
 from mlsearch.training.checkpoints import create_run_dir
 from mlsearch.training.dataset import build_training_examples
 
@@ -20,6 +22,7 @@ class TrainReport:
     summary_path: str
     example_count: int
     base_model_name: str
+    device: str
 
 
 def train_retriever(*, config_path: Path) -> TrainReport:
@@ -33,7 +36,8 @@ def train_retriever(*, config_path: Path) -> TrainReport:
     if not examples:
         raise ValueError("No training examples available. Generate benchmark queries first.")
 
-    model = SentenceTransformer(config.base_model_name, device="cpu")
+    device = resolve_train_device(config.device)
+    model = SentenceTransformer(config.base_model_name, device=device)
     train_examples = [InputExample(texts=[example.query_text, example.document_text]) for example in examples]
     train_dataloader = DataLoader(
         train_examples,
@@ -49,6 +53,9 @@ def train_retriever(*, config_path: Path) -> TrainReport:
     losses_seen: list[float] = []
     for _ in range(config.num_epochs):
         for sentence_features, labels in train_dataloader:
+            sentence_features = [batch_to_device(features, model.device) for features in sentence_features]
+            if isinstance(labels, torch.Tensor):
+                labels = labels.to(model.device)
             optimizer.zero_grad()
             loss_value = train_loss(sentence_features, labels)
             loss_value.backward()
@@ -61,6 +68,7 @@ def train_retriever(*, config_path: Path) -> TrainReport:
         json.dumps(
             {
                 "base_model_name": config.base_model_name,
+                "device": device,
                 "example_count": len(examples),
                 "num_epochs": config.num_epochs,
                 "batch_size": config.batch_size,
@@ -78,4 +86,15 @@ def train_retriever(*, config_path: Path) -> TrainReport:
         summary_path=str(summary_path),
         example_count=len(examples),
         base_model_name=config.base_model_name,
+        device=device,
     )
+
+
+def resolve_train_device(configured_device: str) -> str:
+    if configured_device == "auto":
+        return detect_device()
+    if configured_device == "mps" and not torch.backends.mps.is_available():
+        raise ValueError("Train config requested mps, but MPS is not available on this machine.")
+    if configured_device == "cuda" and not torch.cuda.is_available():
+        raise ValueError("Train config requested cuda, but CUDA is not available on this machine.")
+    return configured_device

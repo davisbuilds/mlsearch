@@ -13,7 +13,16 @@ The v1 fine-tuning loop uses:
 
 Inference currently uses the default device detection path, which prefers MPS on Apple Silicon when available.
 
-Training currently forces CPU because the sentence-transformers training path hit an MPS allocation error in live verification. This keeps the workflow stable on the Mac mini at the cost of slower training.
+Training now uses the configured device in `configs/train.yaml`.
+
+Supported values:
+
+- `mps`
+- `cpu`
+- `cuda`
+- `auto`
+
+`auto` reuses the runtime device detection path and prefers `mps` on Apple Silicon, then `cuda`, then `cpu`.
 
 ## Commands
 

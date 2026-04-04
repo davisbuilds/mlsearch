@@ -32,6 +32,7 @@ class BenchmarkConfig:
 @dataclass(frozen=True)
 class TrainConfig:
     base_model_name: str = "BAAI/bge-small-en-v1.5"
+    device: str = "auto"
     num_epochs: int = 1
     batch_size: int = 8
     learning_rate: float = 2e-5
@@ -92,6 +93,8 @@ def load_train_config(path: Path) -> TrainConfig:
         names = ", ".join(unknown)
         raise ValueError(f"Unknown train config keys: {names}")
     merged = {**defaults, **raw}
+    if merged["device"] not in {"auto", "cpu", "mps", "cuda"}:
+        raise ValueError("Train config device must be one of: auto, cpu, mps, cuda")
     return TrainConfig(**merged)
 
 

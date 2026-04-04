@@ -1,3 +1,5 @@
 timestamp	model_ref	recall@10	mrr	ndcg@10	status	description
 2026-03-31T11:51:54Z	retriever-20260331T115143Z	1.000000	1.000000	1.000000	discard	local fine-tuned compare run
 2026-03-31T12:34:22Z	retriever-20260331T123410Z	1.000000	1.000000	1.000000	discard	local fine-tuned compare run
+2026-04-04T22:44:48Z	retriever-20260404T224033Z	1.000000	0.912262	0.931262	discard	local fine-tuned compare run
+2026-04-04T22:53:34Z	retriever-20260404T225128Z	1.000000	0.961111	0.971031	keep	local fine-tuned compare run
