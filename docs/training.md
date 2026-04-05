@@ -46,6 +46,7 @@ Compare reports also include `query_deltas`, which make it easy to see which rev
 
 - Training examples come from generated query candidates.
 - Any query promoted into `data/benchmark/reviewed/held_out_eval.jsonl` is excluded from training.
+- Any generated query for a held-out eval `source_paper_id` is also excluded, so the split is paper-disjoint from training rather than only query-disjoint.
 - `eval compare` requires a baseline report built against the same benchmark split and will refuse to compare against a stale baseline.
 
 ## Sweep Loop

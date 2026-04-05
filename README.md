@@ -72,7 +72,7 @@ The benchmark review flow is a core part of the project:
 7. Finalize the reviewed split with `benchmark finalize-review`.
    This now merges the reviewed batch into the existing held-out eval instead of replacing it.
 
-The finalized `held_out_eval.jsonl` is the eval source for `eval baseline` and `eval compare`, and those query ids are excluded from training.
+The finalized `held_out_eval.jsonl` is the eval source for `eval baseline` and `eval compare`, and those held-out source papers are excluded from training, not just the exact reviewed query ids.
 
 ## CLI Surface
 

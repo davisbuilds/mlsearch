@@ -34,7 +34,7 @@ The generated manifest also includes overlap diagnostics so you can quantify whe
 2. Run `benchmark generate` to rebuild the candidate pool.
 3. Run `benchmark diagnostics` to inspect title-overlap statistics from the generated manifest.
 4. Run `benchmark sample-review` to export a stratified CSV sample.
-   By default this excludes query ids already seen in archived review batches and the current held-out eval.
+   By default this excludes query ids and source paper ids already seen in archived review batches and the current held-out eval.
    Use `--include-reviewed` only when you explicitly want to revisit previously reviewed rows.
 5. Run `benchmark review-stats` to see pending and completed counts by status and style.
 6. Run `benchmark review-next` to inspect the next pending row with source-paper context.
@@ -49,4 +49,4 @@ The finalized JSONL is the only reviewed artifact used by `eval baseline` and `e
 
 - `data/benchmark/generated/query_candidates.jsonl` remains the synthetic pool.
 - `data/benchmark/reviewed/held_out_eval.jsonl` is the reviewed eval split.
-- Training excludes any `query_id` that appears in the reviewed eval file.
+- Training excludes any reviewed `query_id` and any generated query whose `source_paper_id` appears in the reviewed eval file.

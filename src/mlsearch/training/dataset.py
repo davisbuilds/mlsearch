@@ -34,15 +34,19 @@ def build_training_examples(
     candidates = load_query_candidates(candidates_path)
     papers = load_corpus(corpus_path)
     papers_by_id = {paper.arxiv_id: paper for paper in papers}
-    held_out_query_ids = _load_held_out_query_ids(held_out_eval_path)
+    held_out_query_ids, held_out_source_paper_ids = _load_held_out_eval_filters(held_out_eval_path)
 
     examples: list[TrainingExample] = []
     for candidate in candidates:
         if candidate.query_id in held_out_query_ids:
             continue
+        if candidate.source_paper_id in held_out_source_paper_ids:
+            continue
         if not candidate.positive_ids:
             continue
         positive_id = candidate.positive_ids[0]
+        if positive_id in held_out_source_paper_ids:
+            continue
         paper = papers_by_id.get(positive_id)
         if paper is None:
             continue
@@ -74,10 +78,14 @@ def build_training_examples(
     return examples
 
 
-def _load_held_out_query_ids(path: Path | None) -> set[str]:
+def _load_held_out_eval_filters(path: Path | None) -> tuple[set[str], set[str]]:
     if path is None or not path.exists():
-        return set()
-    return {query.query_id for query in load_reviewed_queries(path)}
+        return set(), set()
+    reviewed_queries = load_reviewed_queries(path)
+    return (
+        {query.query_id for query in reviewed_queries},
+        {query.source_paper_id for query in reviewed_queries},
+    )
 
 
 def expand_training_query_texts(

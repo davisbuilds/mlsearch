@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file guides coding agents working in `/Users/dg-mac-mini/Dev/mlsearch`.
+Guidance for agents working in `mlsearch`.
 
 ## Project Intent
 
@@ -26,9 +26,10 @@ Prefer preserving this order. Do not change benchmark generation and model recip
 
 - `data/benchmark/reviewed/held_out_eval.jsonl` is the canonical reviewed eval split.
 - Reviewed queries must never leak into training.
-- `benchmark sample-review` now excludes previously reviewed query ids by default.
+- `benchmark sample-review` now excludes previously reviewed query ids and source paper ids by default.
 - `benchmark finalize-review` merges the current reviewed batch into the existing held-out eval instead of replacing it.
 - If you need to revisit old rows intentionally, use `benchmark sample-review --include-reviewed`.
+- Treat the held-out eval as paper-disjoint from training: if a paper appears in held-out eval, generated queries for that paper should not be used for training.
 
 ## Review Heuristics
 

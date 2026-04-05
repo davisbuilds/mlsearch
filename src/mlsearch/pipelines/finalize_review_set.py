@@ -17,6 +17,7 @@ class FinalizeReviewPipelineReport:
     merged_count: int
     added_count: int
     rejected_count: int
+    source_paper_count: int
     styles: dict[str, int]
 
 
@@ -42,6 +43,7 @@ def finalize_review_set(*, review_path: Path | None = None) -> FinalizeReviewPip
             "merged_count": len(merged_queries),
             "added_count": sum(1 for query in new_queries if query.query_id not in {item.query_id for item in previous_queries}),
             "previous_count": len(previous_queries),
+            "source_paper_count": len({query.source_paper_id for query in merged_queries}),
             "styles": _count_styles(merged_queries),
         }
     )
@@ -54,6 +56,7 @@ def finalize_review_set(*, review_path: Path | None = None) -> FinalizeReviewPip
         merged_count=len(merged_queries),
         added_count=sum(1 for query in new_queries if query.query_id not in previous_ids),
         rejected_count=report.rejected_count,
+        source_paper_count=len({query.source_paper_id for query in merged_queries}),
         styles=_count_styles(merged_queries),
     )
 
