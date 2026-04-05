@@ -179,6 +179,27 @@ def _add_experiment_parser(subparsers: argparse._SubParsersAction[argparse.Argum
     )
     sweep.set_defaults(handler=_handle_experiment_sweep)
 
+    rerank = nested.add_parser("rerank", help="Run a second-stage reranking experiment on the reviewed eval split.")
+    rerank.add_argument("--retriever-model", default="latest", help="Retriever checkpoint alias for first-stage recall.")
+    rerank.add_argument(
+        "--reference-model",
+        default="latest",
+        help="Reference system to compare against: baseline, latest, or a model checkpoint name.",
+    )
+    rerank.add_argument(
+        "--reranker-model",
+        default="cross-encoder/ms-marco-MiniLM-L-6-v2",
+        help="Cross-encoder model name or local path.",
+    )
+    rerank.add_argument("--rerank-depth", type=int, default=10, help="How many retrieved papers to rerank per query.")
+    rerank.add_argument("--top-k", type=int, default=10, help="Eval cutoff after reranking.")
+    rerank.add_argument(
+        "--record-results",
+        action="store_true",
+        help="Append the rerank outcome to results.tsv.",
+    )
+    rerank.set_defaults(handler=_handle_experiment_rerank)
+
 
 def _add_search_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = subparsers.add_parser("search", help="Search the local paper index.")
@@ -326,6 +347,21 @@ def _handle_experiment_sweep(args: argparse.Namespace) -> int:
         record_results=args.record_results,
     )
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_experiment_rerank(args: argparse.Namespace) -> int:
+    from mlsearch.eval.run_eval import run_rerank_experiment
+
+    report = run_rerank_experiment(
+        retriever_model_ref=args.retriever_model,
+        reference_model_ref=args.reference_model,
+        reranker_model_name=args.reranker_model,
+        rerank_depth=args.rerank_depth,
+        top_k=args.top_k,
+        record_results=args.record_results,
+    )
+    print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 
 

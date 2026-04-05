@@ -133,3 +133,32 @@ def test_experiment_sweep_parser_accepts_grid_arguments() -> None:
     assert args.max_examples == [1000, 2000]
     assert args.seeds == [42, 43]
     assert args.record_results is True
+
+
+def test_experiment_rerank_parser_accepts_reference_and_reranker_options() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(
+        [
+            "experiment",
+            "rerank",
+            "--retriever-model",
+            "latest",
+            "--reference-model",
+            "latest",
+            "--reranker-model",
+            "cross-encoder/ms-marco-MiniLM-L-6-v2",
+            "--rerank-depth",
+            "10",
+            "--top-k",
+            "10",
+            "--record-results",
+        ]
+    )
+    assert args.command == "experiment"
+    assert args.experiment_command == "rerank"
+    assert args.retriever_model == "latest"
+    assert args.reference_model == "latest"
+    assert args.reranker_model == "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    assert args.rerank_depth == 10
+    assert args.top_k == 10
+    assert args.record_results is True

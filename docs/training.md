@@ -36,6 +36,7 @@ There is also an optional `hard_query_pattern_weighting` knob that biases the ca
 uv run mlsearch train --config configs/train.yaml
 uv run mlsearch eval compare --model latest --record-results
 uv run mlsearch experiment sweep --reference-model latest --learning-rate 1e-5 2e-5 --num-epochs 1 2 --record-results
+uv run mlsearch experiment rerank --retriever-model latest --reference-model latest --record-results
 ```
 
 Baseline and compare reports in `artifacts/results/` now include per-query breakdowns.
@@ -58,3 +59,12 @@ Compare reports also include `query_deltas`, which make it easy to see which rev
 - It can append every run to `results.tsv` with `--record-results`.
 
 The intended use is small and disciplined. Prefer 3-8 runs over a reviewed benchmark that already has real headroom, rather than wide sweeps against a trivial split.
+
+## Rerank Experiment
+
+`experiment rerank` evaluates a second-stage cross-encoder over the top retrieved papers from a chosen retriever checkpoint.
+
+- The retriever still provides first-stage recall.
+- The reranker only reorders the shortlist.
+- The experiment compares reranked metrics against a reference system, which can be `baseline`, `latest`, or an explicit checkpoint name.
+- Results are written to `rerank-*.json` and can also be appended to `results.tsv`.

@@ -14,6 +14,7 @@ from mlsearch.eval.metrics import ndcg_at_k, recall_at_k, reciprocal_rank
 from mlsearch.paths import PATHS
 from mlsearch.pipelines.generate_queries import load_query_candidates
 from mlsearch.retrieval.index import build_index
+from mlsearch.retrieval.rerank import DEFAULT_RERANKER_MODEL_NAME, RerankerConfig, rerank_hit_lists
 from mlsearch.retrieval.search import search_many
 from mlsearch.training.checkpoints import latest_checkpoint
 
@@ -63,6 +64,86 @@ def run_baseline_eval(
 
 
 def run_model_eval(*, model_ref: str | Path, top_k: int = 10) -> ModelEvalReport:
+    return _run_checkpoint_eval(
+        model_ref=model_ref,
+        top_k=top_k,
+        report_prefix="compare",
+    )
+
+
+def run_rerank_experiment(
+    *,
+    retriever_model_ref: str,
+    reference_model_ref: str,
+    reranker_model_name: str = DEFAULT_RERANKER_MODEL_NAME,
+    rerank_depth: int = 10,
+    top_k: int = 10,
+    record_results: bool,
+) -> dict[str, object]:
+    candidate_report = _run_checkpoint_eval(
+        model_ref=retriever_model_ref,
+        top_k=top_k,
+        report_prefix="rerank",
+        reranker_model_name=reranker_model_name,
+        rerank_depth=rerank_depth,
+    )
+    reference_name, reference_report = load_reference_report(reference_model_ref, top_k=top_k)
+    ensure_report_compatible(reference_report, candidates_path=Path(candidate_report.candidates_path), report_label=reference_name)
+    reference_metrics = reference_report["metrics"]
+    comparison = compare_metric_sets(candidate_report.metrics, reference_metrics)
+    candidate_report_payload = json.loads(Path(candidate_report.report_path).read_text(encoding="utf-8"))
+    query_deltas = build_query_delta_report(
+        baseline_queries=list(reference_report.get("per_query", [])),
+        candidate_queries=list(candidate_report_payload.get("per_query", [])),
+    )
+    candidate_report_payload.update(
+        {
+            "comparison": comparison,
+            "reference_metrics": reference_metrics,
+            "reference_model_ref": reference_name,
+            "rerank_depth": rerank_depth,
+            "reranker_model_name": reranker_model_name,
+            "retriever_model_ref": candidate_report.model_ref,
+            "query_deltas": query_deltas,
+        }
+    )
+    Path(candidate_report.report_path).write_text(
+        json.dumps(candidate_report_payload, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    payload = {
+        "candidate_metrics": candidate_report.metrics,
+        "comparison": comparison,
+        "query_delta_count": len(query_deltas),
+        "reference_metrics": reference_metrics,
+        "reference_model_ref": reference_name,
+        "report_path": candidate_report.report_path,
+        "rerank_depth": rerank_depth,
+        "reranker_model_name": reranker_model_name,
+        "retriever_model_ref": candidate_report.model_ref,
+    }
+    if record_results:
+        append_result(
+            PATHS.root / "results.tsv",
+            model_ref=f"{candidate_report.model_ref}+rerank",
+            metrics=candidate_report.metrics,
+            status=str(comparison["status"]),
+            description=(
+                f"rerank experiment vs={reference_name} "
+                f"reranker={reranker_model_name} depth={rerank_depth}"
+            ),
+        )
+    return payload
+
+
+def _run_checkpoint_eval(
+    *,
+    model_ref: str | Path,
+    top_k: int,
+    report_prefix: str,
+    reranker_model_name: str | None = None,
+    rerank_depth: int = 10,
+) -> ModelEvalReport:
     checkpoint = _resolve_checkpoint(model_ref)
     compare_index_dir = PATHS.artifacts_index / checkpoint.name
     build_index(output_dir=compare_index_dir, model_name=str(checkpoint))
@@ -75,8 +156,10 @@ def run_model_eval(*, model_ref: str | Path, top_k: int = 10) -> ModelEvalReport
         candidates_path=candidate_path,
         index_dir=compare_index_dir,
         output_dir=PATHS.artifacts_results,
-        report_prefix="compare",
+        report_prefix=report_prefix,
         top_k=top_k,
+        reranker_model_name=reranker_model_name,
+        rerank_depth=rerank_depth,
     )
     return ModelEvalReport(
         report_path=str(report_path),
@@ -186,12 +269,21 @@ def _run_eval(
     output_dir: Path,
     report_prefix: str,
     top_k: int,
+    reranker_model_name: str | None = None,
+    rerank_depth: int = 10,
 ) -> tuple[dict[str, float], Path]:
     hits_per_query = search_many(
         [candidate.query_text for candidate in candidates],
         top_k=top_k,
         index_dir=index_dir,
     )
+    if reranker_model_name is not None:
+        hits_per_query = rerank_hit_lists(
+            [candidate.query_text for candidate in candidates],
+            hits_per_query,
+            index_dir=index_dir,
+            config=RerankerConfig(model_name=reranker_model_name, rerank_depth=rerank_depth),
+        )
     metrics = aggregate_metrics(candidates, hits_per_query, top_k=top_k)
     query_breakdowns = build_query_breakdowns(candidates, hits_per_query, top_k=top_k)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -206,6 +298,8 @@ def _run_eval(
                 "per_query": query_breakdowns,
                 "top_k": top_k,
                 "index_dir": str(index_dir),
+                "rerank_depth": rerank_depth if reranker_model_name is not None else None,
+                "reranker_model_name": reranker_model_name,
             },
             indent=2,
             sort_keys=True,
@@ -252,6 +346,21 @@ def ensure_baseline_compatible(baseline_report: dict[str, object], *, candidates
     if Path(str(baseline_candidates_path)) != candidates_path:
         raise ValueError(
             "Latest baseline report targets a different benchmark split; rerun `eval baseline` before compare."
+        )
+
+
+def ensure_report_compatible(
+    report_payload: dict[str, object],
+    *,
+    candidates_path: Path,
+    report_label: str,
+) -> None:
+    report_candidates_path = report_payload.get("candidates_path")
+    if report_candidates_path is None:
+        raise ValueError(f"{report_label} report is missing candidates_path; rerun the reference evaluation.")
+    if Path(str(report_candidates_path)) != candidates_path:
+        raise ValueError(
+            f"{report_label} report targets a different benchmark split; rerun the reference evaluation first."
         )
 
 
@@ -307,6 +416,18 @@ def _resolve_checkpoint(model_ref: str | Path) -> Path:
     if not checkpoint.exists():
         raise FileNotFoundError(f"Model checkpoint not found: {checkpoint}")
     return checkpoint
+
+
+def load_reference_report(reference_model_ref: str, *, top_k: int) -> tuple[str, dict[str, object]]:
+    if reference_model_ref == "baseline":
+        return "baseline", load_latest_report("baseline")
+    reference_eval = _run_checkpoint_eval(
+        model_ref=reference_model_ref,
+        top_k=top_k,
+        report_prefix="reference",
+    )
+    report = json.loads(Path(reference_eval.report_path).read_text(encoding="utf-8"))
+    return reference_eval.model_ref, report
 
 
 def _relevant_rank(result_ids: list[str], relevant_ids: set[str]) -> int | None:

@@ -7,6 +7,7 @@ The repo is organized around a benchmark-first retrieval workflow:
 - fixed data build path
 - fixed evaluation harness
 - narrow training and experiment surfaces
+- optional second-stage reranking over a fixed shortlist
 - shared CLI for both benchmarking and search
 
 ## Initial Layout
