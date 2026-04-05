@@ -162,3 +162,12 @@ def test_experiment_rerank_parser_accepts_reference_and_reranker_options() -> No
     assert args.rerank_depth == 10
     assert args.top_k == 10
     assert args.record_results is True
+
+
+def test_benchmark_sample_review_parser_accepts_include_reviewed() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["benchmark", "sample-review", "--count", "10", "--include-reviewed"])
+    assert args.command == "benchmark"
+    assert args.benchmark_command == "sample-review"
+    assert args.count == 10
+    assert args.include_reviewed is True

@@ -54,6 +54,11 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
 
     review = nested.add_parser("sample-review", help="Sample queries for manual review.")
     review.add_argument("--count", type=int, default=30, help="Review sample size.")
+    review.add_argument(
+        "--include-reviewed",
+        action="store_true",
+        help="Allow queries that already appear in archived review batches or the current held-out eval.",
+    )
     review.set_defaults(handler=_handle_benchmark_sample_review)
 
     finalize = nested.add_parser("finalize-review", help="Finalize the reviewed held-out eval split.")
@@ -246,6 +251,7 @@ def _handle_benchmark_sample_review(args: argparse.Namespace) -> int:
     report = sample_review_set(
         config_path=PATHS.configs / "benchmark.yaml",
         count=args.count,
+        include_reviewed=args.include_reviewed,
     )
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
     return 0

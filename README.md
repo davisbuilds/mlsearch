@@ -65,10 +65,12 @@ The benchmark review flow is a core part of the project:
 1. Optionally archive the current reviewed artifacts with `benchmark archive-reviewed --label <name>`.
 2. Generate candidates with `benchmark generate` and inspect overlap with `benchmark diagnostics`.
 3. Export a review sample with `benchmark sample-review`.
+   By default this excludes query ids already present in archived review batches and the current held-out eval. Use `--include-reviewed` only if you intentionally want repeats.
 4. Inspect progress with `benchmark review-stats`.
 5. Step through rows with `benchmark review-loop` or inspect one row with `benchmark review-next`.
 6. Mark each query as `accept`, `edit`, or `reject`.
 7. Finalize the reviewed split with `benchmark finalize-review`.
+   This now merges the reviewed batch into the existing held-out eval instead of replacing it.
 
 The finalized `held_out_eval.jsonl` is the eval source for `eval baseline` and `eval compare`, and those query ids are excluded from training.
 
