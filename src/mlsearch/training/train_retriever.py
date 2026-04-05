@@ -39,6 +39,8 @@ def train_retriever(*, config_path: Path | None = None, config: TrainConfig | No
         corpus_path=PATHS.data_processed / "corpus.jsonl",
         held_out_eval_path=PATHS.data_benchmark / "reviewed" / "held_out_eval.jsonl",
         max_examples=resolved_config.max_examples,
+        seed=resolved_config.seed,
+        question_prefix_augmentation=resolved_config.question_prefix_augmentation,
     )
     if not examples:
         raise ValueError("No training examples available. Generate benchmark queries first.")
@@ -79,6 +81,10 @@ def train_retriever(*, config_path: Path | None = None, config: TrainConfig | No
                 "config": asdict(resolved_config),
                 "device": device,
                 "example_count": len(examples),
+                "style_counts": {
+                    style: sum(1 for example in examples if example.style == style)
+                    for style in sorted({example.style for example in examples})
+                },
                 "num_epochs": resolved_config.num_epochs,
                 "batch_size": resolved_config.batch_size,
                 "learning_rate": resolved_config.learning_rate,

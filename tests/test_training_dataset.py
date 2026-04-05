@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from mlsearch.data.models import ArxivPaper
-from mlsearch.training.dataset import build_training_examples
+from mlsearch.training.dataset import build_training_examples, expand_training_query_texts
 
 
 def test_build_training_examples_maps_query_to_positive_document(tmp_path: Path) -> None:
@@ -146,3 +146,110 @@ def test_build_training_examples_excludes_reviewed_eval_queries(tmp_path: Path) 
 
     assert len(examples) == 1
     assert examples[0].query_id == "paper-2-question"
+
+
+def test_expand_training_query_texts_augment_question_prefixes() -> None:
+    variants = expand_training_query_texts(
+        "papers on graph neural networks for chemistry",
+        style="question",
+        question_prefix_augmentation=True,
+    )
+
+    assert variants == [
+        "papers on graph neural networks for chemistry",
+        "research on graph neural networks for chemistry",
+        "work on graph neural networks for chemistry",
+    ]
+
+
+def test_build_training_examples_augment_question_queries_and_sample_deterministically(tmp_path: Path) -> None:
+    corpus_path = tmp_path / "corpus.jsonl"
+    corpus_path.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    ArxivPaper(
+                        arxiv_id="paper-1",
+                        title="Meta-learning for few-shot classification",
+                        abstract="Abstract",
+                        authors=("Alice",),
+                        categories=("cs.LG",),
+                        primary_category="cs.LG",
+                        published="2020-01-01T00:00:00Z",
+                        updated="2020-01-01T00:00:00Z",
+                        abs_url="https://arxiv.org/abs/paper-1",
+                        pdf_url=None,
+                    ).to_dict()
+                ),
+                json.dumps(
+                    ArxivPaper(
+                        arxiv_id="paper-2",
+                        title="Uncertainty estimation in graph neural networks",
+                        abstract="Abstract",
+                        authors=("Bob",),
+                        categories=("cs.LG",),
+                        primary_category="cs.LG",
+                        published="2020-01-01T00:00:00Z",
+                        updated="2020-01-01T00:00:00Z",
+                        abs_url="https://arxiv.org/abs/paper-2",
+                        pdf_url=None,
+                    ).to_dict()
+                ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    candidates_path = tmp_path / "queries.jsonl"
+    candidates_path.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "query_id": "paper-1-question",
+                        "query_text": "papers on few-shot classification",
+                        "style": "question",
+                        "source_paper_id": "paper-1",
+                        "source_title": "Meta-learning for few-shot classification",
+                        "source_published": "2020-01-01T00:00:00Z",
+                        "positive_ids": ["paper-1"],
+                        "hard_negative_ids": [],
+                    }
+                ),
+                json.dumps(
+                    {
+                        "query_id": "paper-2-keyword",
+                        "query_text": "uncertainty estimation graph neural networks",
+                        "style": "keyword",
+                        "source_paper_id": "paper-2",
+                        "source_title": "Uncertainty estimation in graph neural networks",
+                        "source_published": "2020-01-01T00:00:00Z",
+                        "positive_ids": ["paper-2"],
+                        "hard_negative_ids": [],
+                    }
+                ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    first = build_training_examples(
+        candidates_path=candidates_path,
+        corpus_path=corpus_path,
+        max_examples=3,
+        seed=7,
+        question_prefix_augmentation=True,
+    )
+    second = build_training_examples(
+        candidates_path=candidates_path,
+        corpus_path=corpus_path,
+        max_examples=3,
+        seed=7,
+        question_prefix_augmentation=True,
+    )
+
+    assert len(first) == 3
+    assert [example.query_id for example in first] == [example.query_id for example in second]
+    assert any(example.query_id.endswith("-aug1") for example in first)
+    assert any(example.style == "question" for example in first)

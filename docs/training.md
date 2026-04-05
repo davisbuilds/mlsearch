@@ -26,6 +26,8 @@ Supported values:
 
 The tracked training config now also carries a `seed`, and training applies that seed before dataloader shuffling and optimization so experiment runs are easier to compare fairly.
 
+The tracked training recipe can also augment question-style queries across the supported review prefixes (`papers on`, `research on`, `work on`). This broadens the local training pool without mutating the reviewed eval set.
+
 ## Commands
 
 ```bash

@@ -39,6 +39,7 @@ class TrainConfig:
     learning_rate: float = 2e-5
     warmup_ratio: float = 0.1
     max_examples: int = 5000
+    question_prefix_augmentation: bool = False
     run_name_prefix: str = "retriever"
 
 
