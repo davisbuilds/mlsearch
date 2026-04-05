@@ -14,3 +14,4 @@ timestamp	model_ref	recall@10	mrr	ndcg@10	status	description
 2026-04-05T00:10:16Z	retriever-20260405T000816Z	0.966667	0.927778	0.937698	discard	experiment sweep run vs=retriever-20260404T225128Z lr=2e-05 epochs=2 batch=4 max_examples=2000 seed=42
 2026-04-05T00:33:00Z	retriever-20260405T003142Z	1.000000	0.932540	0.948809	discard	hard-query weighting run (beats baseline, below incumbent)
 2026-04-05T00:41:14Z	retriever-20260404T225128Z+rerank	1.000000	0.983333	0.987698	keep	rerank experiment vs=retriever-20260404T225128Z reranker=cross-encoder/ms-marco-MiniLM-L-6-v2 depth=10
+2026-04-05T01:31:49Z	retriever-20260405T013030Z	1.000000	0.924286	0.942505	discard	local fine-tuned compare run
