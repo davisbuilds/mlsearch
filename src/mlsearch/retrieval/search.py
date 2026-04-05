@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 
 from mlsearch.data.models import ArxivPaper
+from mlsearch.paths import PATHS
 from mlsearch.retrieval.embedder import EmbedderConfig, TextEmbedder
 from mlsearch.retrieval.index import load_index
 
@@ -18,11 +19,31 @@ class SearchHit:
     score: float
 
 
-def search_index(query: str, *, top_k: int, index_dir: Path | None = None) -> list[SearchHit]:
-    papers, embeddings, manifest = load_index(index_dir)
+def search_index(
+    query: str,
+    *,
+    top_k: int,
+    index_dir: Path | None = None,
+    reranker_model_name: str | None = None,
+    rerank_depth: int = 10,
+) -> list[SearchHit]:
+    resolved_index_dir = index_dir or PATHS.artifacts_index
+    papers, embeddings, manifest = load_index(resolved_index_dir)
     embedder = TextEmbedder(EmbedderConfig(model_name=str(manifest["model_name"])))
     query_embedding = embedder.embed_queries([query])[0]
-    return rank_hits(query_embedding, embeddings, papers, top_k=top_k)
+    hits = rank_hits(query_embedding, embeddings, papers, top_k=top_k)
+    if reranker_model_name is None:
+        return hits
+
+    from mlsearch.retrieval.rerank import RerankerConfig, rerank_hit_lists
+
+    reranked = rerank_hit_lists(
+        [query],
+        [hits],
+        index_dir=resolved_index_dir,
+        config=RerankerConfig(model_name=reranker_model_name, rerank_depth=rerank_depth),
+    )
+    return reranked[0]
 
 
 def search_many(

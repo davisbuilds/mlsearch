@@ -49,7 +49,9 @@ uv run mlsearch benchmark review-loop --limit 1
 uv run mlsearch benchmark finalize-review
 uv run mlsearch index build
 uv run mlsearch eval baseline
+uv run mlsearch eval baseline-rerank
 uv run mlsearch search "few-shot classification" --top-k 3
+uv run mlsearch search "few-shot classification" --top-k 3 --rerank
 uv run mlsearch train --config configs/train.yaml
 uv run mlsearch eval compare --model latest --record-results
 uv run mlsearch experiment sweep --reference-model latest --learning-rate 1e-5 2e-5 --num-epochs 1 2 --record-results
@@ -93,6 +95,11 @@ Useful review helpers:
 - `benchmark review-stats`
 - `benchmark review-next`
 - `benchmark review-loop`
+
+Trustworthy retrieval helpers:
+
+- `eval baseline-rerank`
+- `search --rerank`
 
 ## Constraints
 

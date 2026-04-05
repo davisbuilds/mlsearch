@@ -35,6 +35,7 @@ There is also an optional `hard_query_pattern_weighting` knob that biases the ca
 ```bash
 uv run mlsearch train --config configs/train.yaml
 uv run mlsearch eval compare --model latest --record-results
+uv run mlsearch eval baseline-rerank
 uv run mlsearch experiment sweep --reference-model latest --learning-rate 1e-5 2e-5 --num-epochs 1 2 --record-results
 uv run mlsearch experiment rerank --retriever-model latest --reference-model latest --record-results
 ```
@@ -69,3 +70,8 @@ The intended use is small and disciplined. Prefer 3-8 runs over a reviewed bench
 - The reranker only reorders the shortlist.
 - The experiment compares reranked metrics against a reference system, which can be `baseline`, `latest`, or an explicit checkpoint name.
 - Results are written to `rerank-*.json` and can also be appended to `results.tsv`.
+
+For the currently most trustworthy interactive path, use:
+
+- `uv run mlsearch eval baseline-rerank`
+- `uv run mlsearch search "your query" --rerank`

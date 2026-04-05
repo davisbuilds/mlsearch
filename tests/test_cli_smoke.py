@@ -26,6 +26,25 @@ def test_search_parser_accepts_arguments() -> None:
     assert args.format == "json"
 
 
+def test_search_parser_accepts_rerank_arguments() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(
+        [
+            "search",
+            "test query",
+            "--rerank",
+            "--reranker-model",
+            "cross-encoder/ms-marco-MiniLM-L-6-v2",
+            "--rerank-depth",
+            "8",
+        ]
+    )
+    assert args.command == "search"
+    assert args.rerank is True
+    assert args.reranker_model == "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    assert args.rerank_depth == 8
+
+
 def test_benchmark_finalize_review_parser_accepts_input_override() -> None:
     parser = cli._build_parser()
     args = parser.parse_args(["benchmark", "finalize-review", "--input", "data/benchmark/reviewed/review_sample.csv"])
@@ -162,6 +181,27 @@ def test_experiment_rerank_parser_accepts_reference_and_reranker_options() -> No
     assert args.rerank_depth == 10
     assert args.top_k == 10
     assert args.record_results is True
+
+
+def test_eval_baseline_rerank_parser_accepts_rerank_options() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(
+        [
+            "eval",
+            "baseline-rerank",
+            "--reranker-model",
+            "cross-encoder/ms-marco-MiniLM-L-6-v2",
+            "--rerank-depth",
+            "10",
+            "--top-k",
+            "10",
+        ]
+    )
+    assert args.command == "eval"
+    assert args.eval_command == "baseline-rerank"
+    assert args.reranker_model == "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    assert args.rerank_depth == 10
+    assert args.top_k == 10
 
 
 def test_benchmark_sample_review_parser_accepts_include_reviewed() -> None:

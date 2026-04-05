@@ -63,6 +63,36 @@ def run_baseline_eval(
     )
 
 
+def run_baseline_rerank_eval(
+    *,
+    candidates_path: Path | None = None,
+    output_dir: Path | None = None,
+    top_k: int = 10,
+    reranker_model_name: str = DEFAULT_RERANKER_MODEL_NAME,
+    rerank_depth: int = 10,
+) -> BaselineEvalReport:
+    selected_candidates_path, candidates = resolve_eval_candidates(
+        generated_candidates_path=candidates_path or (PATHS.data_benchmark / "generated" / "query_candidates.jsonl"),
+        reviewed_eval_path=PATHS.data_benchmark / "reviewed" / "held_out_eval.jsonl",
+    )
+    metrics, report_path = _run_eval(
+        candidates=candidates,
+        candidates_path=selected_candidates_path,
+        index_dir=PATHS.artifacts_index,
+        output_dir=output_dir or PATHS.artifacts_results,
+        report_prefix="baseline-rerank",
+        top_k=top_k,
+        reranker_model_name=reranker_model_name,
+        rerank_depth=rerank_depth,
+    )
+    return BaselineEvalReport(
+        report_path=str(report_path),
+        candidates_path=str(selected_candidates_path),
+        query_count=len(candidates),
+        metrics=metrics,
+    )
+
+
 def run_model_eval(*, model_ref: str | Path, top_k: int = 10) -> ModelEvalReport:
     return _run_checkpoint_eval(
         model_ref=model_ref,

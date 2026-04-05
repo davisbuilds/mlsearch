@@ -145,6 +145,21 @@ def _add_eval_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
     baseline = nested.add_parser("baseline", help="Run the zero-shot baseline evaluation.")
     baseline.set_defaults(handler=_handle_eval_baseline)
 
+    baseline_rerank = nested.add_parser("baseline-rerank", help="Run baseline retrieval plus second-stage reranking.")
+    baseline_rerank.add_argument(
+        "--reranker-model",
+        default="cross-encoder/ms-marco-MiniLM-L-6-v2",
+        help="Cross-encoder model name or local path.",
+    )
+    baseline_rerank.add_argument(
+        "--rerank-depth",
+        type=int,
+        default=10,
+        help="How many retrieved papers to rerank per query.",
+    )
+    baseline_rerank.add_argument("--top-k", type=int, default=10, help="Eval cutoff after reranking.")
+    baseline_rerank.set_defaults(handler=_handle_eval_baseline_rerank)
+
     compare = nested.add_parser("compare", help="Compare a trained model to baseline.")
     compare.add_argument("--model", default="latest", help="Model checkpoint alias.")
     compare.add_argument(
@@ -210,6 +225,22 @@ def _add_search_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentP
     parser = subparsers.add_parser("search", help="Search the local paper index.")
     parser.add_argument("query", help="Free-form semantic search query.")
     parser.add_argument("--top-k", type=int, default=5, help="Number of results to return.")
+    parser.add_argument(
+        "--rerank",
+        action="store_true",
+        help="Apply the default second-stage cross-encoder reranker to the retrieved shortlist.",
+    )
+    parser.add_argument(
+        "--reranker-model",
+        default="cross-encoder/ms-marco-MiniLM-L-6-v2",
+        help="Cross-encoder model name or local path used when --rerank is enabled.",
+    )
+    parser.add_argument(
+        "--rerank-depth",
+        type=int,
+        default=10,
+        help="How many retrieved papers to rerank when --rerank is enabled.",
+    )
     parser.add_argument(
         "--format",
         default="table",
@@ -323,6 +354,21 @@ def _handle_eval_baseline(_: argparse.Namespace) -> int:
     return 0
 
 
+def _handle_eval_baseline_rerank(args: argparse.Namespace) -> int:
+    from mlsearch.eval.run_eval import run_baseline_rerank_eval
+
+    try:
+        report = run_baseline_rerank_eval(
+            reranker_model_name=args.reranker_model,
+            rerank_depth=args.rerank_depth,
+            top_k=args.top_k,
+        )
+    except FileNotFoundError as exc:
+        raise SystemExit(f"Missing retrieval artifacts: {exc}") from exc
+    print(json.dumps(report.__dict__, indent=2, sort_keys=True))
+    return 0
+
+
 def _handle_eval_compare(args: argparse.Namespace) -> int:
     from mlsearch.eval.run_eval import run_compare_eval
 
@@ -376,7 +422,12 @@ def _handle_search(args: argparse.Namespace) -> int:
     from mlsearch.retrieval.search import search_index
 
     try:
-        hits = search_index(args.query, top_k=args.top_k)
+        hits = search_index(
+            args.query,
+            top_k=args.top_k,
+            reranker_model_name=args.reranker_model if args.rerank else None,
+            rerank_depth=args.rerank_depth,
+        )
     except FileNotFoundError as exc:
         raise SystemExit(f"Missing retrieval artifacts: {exc}") from exc
     print(render_hits(hits, output_format=args.format))

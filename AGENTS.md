@@ -66,9 +66,9 @@ Examples of good directions:
 - The current reranker path is a second-stage experiment over the retriever shortlist, not a retriever replacement.
 - If `Recall@10` is already saturated and `MRR`/`nDCG` still have headroom, reranking is usually the highest-leverage next step.
 - As of the expanded `45`-query reviewed eval, the strongest end-to-end system is:
-  - first-stage retriever `retriever-20260404T225128Z`
+  - zero-shot baseline retriever over `BAAI/bge-small-en-v1.5`
   - reranker `cross-encoder/ms-marco-MiniLM-L-6-v2`
-- That stack beat the first-stage retriever alone on the `45`-query held-out eval with no recall loss, so treat reranking as the default comparison path once first-stage recall is already strong.
+- After enforcing paper-disjoint held-out training, treat `eval baseline-rerank` and `search --rerank` as the most trustworthy default path unless a newer paper-disjoint fine-tuned retriever clearly beats them.
 
 ## Verification
 
