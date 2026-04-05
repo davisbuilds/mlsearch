@@ -6,7 +6,7 @@ from pathlib import Path
 
 from mlsearch.benchmark.review import load_reviewed_queries
 from mlsearch.data.models import ArxivPaper
-from mlsearch.pipelines.generate_queries import QUERY_PREFIXES, load_query_candidates
+from mlsearch.pipelines.generate_queries import QUERY_PREFIXES, keyword_tokens, load_query_candidates, title_overlap_ratio
 from mlsearch.pipelines.validate_corpus import load_corpus
 from mlsearch.retrieval.index import format_document
 
@@ -18,6 +18,7 @@ class TrainingExample:
     source_paper_id: str
     document_text: str
     style: str
+    sampling_weight: float
 
 
 def build_training_examples(
@@ -28,6 +29,7 @@ def build_training_examples(
     max_examples: int | None = None,
     seed: int = 0,
     question_prefix_augmentation: bool = False,
+    hard_query_pattern_weighting: bool = False,
 ) -> list[TrainingExample]:
     candidates = load_query_candidates(candidates_path)
     papers = load_corpus(corpus_path)
@@ -59,13 +61,16 @@ def build_training_examples(
                     source_paper_id=positive_id,
                     document_text=format_document(paper),
                     style=candidate.style,
+                    sampling_weight=compute_sampling_weight(
+                        query_text,
+                        source_title=candidate.source_title,
+                        style=candidate.style,
+                        hard_query_pattern_weighting=hard_query_pattern_weighting,
+                    ),
                 )
             )
     if max_examples is not None and len(examples) > max_examples:
-        rng = random.Random(seed)
-        sampled_examples = list(examples)
-        rng.shuffle(sampled_examples)
-        return sampled_examples[:max_examples]
+        return sample_training_examples(examples, max_examples=max_examples, seed=seed)
     return examples
 
 
@@ -106,3 +111,48 @@ def strip_question_prefix(query_text: str) -> str:
         if lowered.startswith(needle):
             return query_text[len(needle) :].strip()
     return ""
+
+
+def compute_sampling_weight(
+    query_text: str,
+    *,
+    source_title: str,
+    style: str,
+    hard_query_pattern_weighting: bool,
+) -> float:
+    if not hard_query_pattern_weighting:
+        return 1.0
+
+    weight = 1.0
+    overlap = title_overlap_ratio(query_text, source_title)
+    token_count = len(keyword_tokens(query_text))
+    if style == "question":
+        weight += 0.75
+    if overlap <= 0.1:
+        weight += 1.25
+    elif overlap <= 0.2:
+        weight += 0.75
+    elif overlap <= 0.35:
+        weight += 0.25
+    if token_count <= 4:
+        weight += 0.5
+    return weight
+
+
+def sample_training_examples(
+    examples: list[TrainingExample],
+    *,
+    max_examples: int,
+    seed: int,
+) -> list[TrainingExample]:
+    if len(examples) <= max_examples:
+        return list(examples)
+
+    rng = random.Random(seed)
+    keyed_examples: list[tuple[float, TrainingExample]] = []
+    for example in examples:
+        weight = max(example.sampling_weight, 1e-6)
+        key = rng.random() ** (1.0 / weight)
+        keyed_examples.append((key, example))
+    keyed_examples.sort(key=lambda item: item[0], reverse=True)
+    return [example for _, example in keyed_examples[:max_examples]]

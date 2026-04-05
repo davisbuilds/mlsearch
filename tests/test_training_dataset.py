@@ -4,7 +4,12 @@ import json
 from pathlib import Path
 
 from mlsearch.data.models import ArxivPaper
-from mlsearch.training.dataset import build_training_examples, expand_training_query_texts
+from mlsearch.training.dataset import (
+    build_training_examples,
+    compute_sampling_weight,
+    expand_training_query_texts,
+    sample_training_examples,
+)
 
 
 def test_build_training_examples_maps_query_to_positive_document(tmp_path: Path) -> None:
@@ -253,3 +258,40 @@ def test_build_training_examples_augment_question_queries_and_sample_determinist
     assert [example.query_id for example in first] == [example.query_id for example in second]
     assert any(example.query_id.endswith("-aug1") for example in first)
     assert any(example.style == "question" for example in first)
+
+
+def test_compute_sampling_weight_prefers_broader_question_queries() -> None:
+    broad_question_weight = compute_sampling_weight(
+        "papers on traffic routing ml",
+        source_title="Online Learning for Traffic Routing under Unknown Preferences",
+        style="question",
+        hard_query_pattern_weighting=True,
+    )
+    title_like_keyword_weight = compute_sampling_weight(
+        "online learning traffic routing unknown preferences",
+        source_title="Online Learning for Traffic Routing under Unknown Preferences",
+        style="keyword",
+        hard_query_pattern_weighting=True,
+    )
+
+    assert broad_question_weight > title_like_keyword_weight
+
+
+def test_sample_training_examples_is_deterministic_and_weighted() -> None:
+    examples = [
+        type("Example", (), {})(),
+        type("Example", (), {})(),
+        type("Example", (), {})(),
+    ]
+    examples[0].sampling_weight = 3.5
+    examples[0].query_id = "high"
+    examples[1].sampling_weight = 1.0
+    examples[1].query_id = "mid"
+    examples[2].sampling_weight = 0.5
+    examples[2].query_id = "low"
+
+    first = sample_training_examples(examples, max_examples=2, seed=11)
+    second = sample_training_examples(examples, max_examples=2, seed=11)
+
+    assert [example.query_id for example in first] == [example.query_id for example in second]
+    assert "high" in {example.query_id for example in first}

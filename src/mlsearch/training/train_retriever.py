@@ -41,6 +41,7 @@ def train_retriever(*, config_path: Path | None = None, config: TrainConfig | No
         max_examples=resolved_config.max_examples,
         seed=resolved_config.seed,
         question_prefix_augmentation=resolved_config.question_prefix_augmentation,
+        hard_query_pattern_weighting=resolved_config.hard_query_pattern_weighting,
     )
     if not examples:
         raise ValueError("No training examples available. Generate benchmark queries first.")
@@ -84,6 +85,11 @@ def train_retriever(*, config_path: Path | None = None, config: TrainConfig | No
                 "style_counts": {
                     style: sum(1 for example in examples if example.style == style)
                     for style in sorted({example.style for example in examples})
+                },
+                "sampling_weight_summary": {
+                    "min": min(example.sampling_weight for example in examples),
+                    "max": max(example.sampling_weight for example in examples),
+                    "mean": sum(example.sampling_weight for example in examples) / len(examples),
                 },
                 "num_epochs": resolved_config.num_epochs,
                 "batch_size": resolved_config.batch_size,

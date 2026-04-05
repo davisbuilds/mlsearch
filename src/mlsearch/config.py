@@ -40,6 +40,7 @@ class TrainConfig:
     warmup_ratio: float = 0.1
     max_examples: int = 5000
     question_prefix_augmentation: bool = False
+    hard_query_pattern_weighting: bool = False
     run_name_prefix: str = "retriever"
 
 

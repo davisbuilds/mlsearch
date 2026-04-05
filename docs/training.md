@@ -28,6 +28,8 @@ The tracked training config now also carries a `seed`, and training applies that
 
 The tracked training recipe can also augment question-style queries across the supported review prefixes (`papers on`, `research on`, `work on`). This broadens the local training pool without mutating the reviewed eval set.
 
+There is also an optional `hard_query_pattern_weighting` knob that biases the capped training sample toward broader, lower-overlap queries. It is useful as an experiment surface, but it is not the default recipe unless it produces a new champion.
+
 ## Commands
 
 ```bash
