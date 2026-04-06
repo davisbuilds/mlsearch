@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from mlsearch.benchmark.review import write_review_csv
 from mlsearch.benchmark.schema import QueryCandidate, ReviewedQuery
 from mlsearch.pipelines.finalize_review_set import finalize_review_set
-from mlsearch.pipelines.sample_review_set import load_reviewed_query_ids, load_reviewed_source_paper_ids
+from mlsearch.pipelines.sample_review_set import load_reviewed_query_ids, load_reviewed_source_paper_ids, sample_review_set
 
 
 def test_load_reviewed_query_ids_includes_archived_and_held_out(tmp_path: Path, monkeypatch) -> None:
@@ -152,3 +152,68 @@ def test_finalize_review_set_merges_existing_held_out_eval(tmp_path: Path, monke
     assert report.merged_count == 2
     assert report.source_paper_count == 2
     assert {row["query_id"] for row in merged_rows} == {"paper-1-keyword", "paper-2-keyword"}
+
+
+def test_sample_review_set_does_not_fallback_to_reviewed_candidates_when_pool_is_small(tmp_path: Path, monkeypatch) -> None:
+    root = tmp_path
+    benchmark_dir = root / "data" / "benchmark"
+    reviewed_dir = benchmark_dir / "reviewed"
+    generated_dir = benchmark_dir / "generated"
+    reviewed_dir.mkdir(parents=True)
+    generated_dir.mkdir(parents=True)
+
+    held_out = reviewed_dir / "held_out_eval.jsonl"
+    held_out.write_text(
+        json.dumps(
+            ReviewedQuery(
+                query_id="paper-1-question",
+                query_text="query",
+                style="question",
+                source_paper_id="paper-1",
+                relevant_paper_ids=("paper-1",),
+                review_status="accept",
+            ).to_dict()
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    candidates_path = generated_dir / "query_candidates.jsonl"
+    rows = [
+        QueryCandidate(
+            query_id="paper-1-keyword",
+            query_text="paper one",
+            style="keyword",
+            source_paper_id="paper-1",
+            source_title="Paper One",
+            source_published="2020-01-01T00:00:00Z",
+            positive_ids=("paper-1",),
+            hard_negative_ids=(),
+        ),
+        QueryCandidate(
+            query_id="paper-2-keyword",
+            query_text="paper two",
+            style="keyword",
+            source_paper_id="paper-2",
+            source_title="Paper Two",
+            source_published="2020-01-01T00:00:00Z",
+            positive_ids=("paper-2",),
+            hard_negative_ids=(),
+        ),
+    ]
+    candidates_path.write_text(
+        "\n".join(json.dumps(row.to_dict()) for row in rows) + "\n",
+        encoding="utf-8",
+    )
+
+    fake_paths = SimpleNamespace(data_benchmark=benchmark_dir)
+    fake_config = SimpleNamespace(seed=7)
+    monkeypatch.setattr("mlsearch.pipelines.sample_review_set.PATHS", fake_paths)
+    monkeypatch.setattr("mlsearch.pipelines.sample_review_set.load_benchmark_config", lambda _path: fake_config)
+
+    report = sample_review_set(config_path=root / "configs" / "benchmark.yaml", count=10)
+
+    review_rows = list(csv.DictReader((reviewed_dir / "review_sample.csv").open()))
+    assert report.count == 1
+    assert len(review_rows) == 1
+    assert review_rows[0]["query_id"] == "paper-2-keyword"

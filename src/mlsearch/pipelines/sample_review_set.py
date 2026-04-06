@@ -33,11 +33,7 @@ def sample_review_set(*, config_path: Path, count: int, include_reviewed: bool =
         if candidate.query_id not in excluded_query_ids
         and candidate.source_paper_id not in excluded_source_paper_ids
     ]
-    if len(eligible_candidates) < count:
-        eligible_candidates = list(candidates)
-        excluded_query_ids = set()
-        excluded_source_paper_ids = set()
-    selected = stratified_sample(eligible_candidates, count=count, seed=config.seed)
+    selected = stratified_sample(eligible_candidates, count=min(count, len(eligible_candidates)), seed=config.seed)
 
     review_path = PATHS.data_benchmark / "reviewed" / "review_sample.csv"
     write_review_csv(review_path, selected)
