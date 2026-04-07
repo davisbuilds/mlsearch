@@ -24,12 +24,14 @@ Prefer preserving this order. Do not change benchmark generation and model recip
 
 ## Benchmark Rules
 
-- `data/benchmark/reviewed/held_out_eval.jsonl` is the canonical reviewed eval split.
+- `data/benchmark/reviewed/held_out_eval.jsonl` is the `dev` reviewed eval split.
+- `data/benchmark/reviewed/held_out_eval_test.jsonl` is the `test` reviewed eval split.
 - Reviewed queries must never leak into training.
 - `benchmark sample-review` now excludes previously reviewed query ids and source paper ids by default.
-- `benchmark finalize-review` merges the current reviewed batch into the existing held-out eval instead of replacing it.
+- Use `--split dev` for the working benchmark and `--split test` for blind expansion.
+- `benchmark finalize-review` merges the current reviewed batch into the existing split instead of replacing it.
 - If you need to revisit old rows intentionally, use `benchmark sample-review --include-reviewed`.
-- Treat the held-out eval as paper-disjoint from training: if a paper appears in held-out eval, generated queries for that paper should not be used for training.
+- Treat all reviewed splits as paper-disjoint from training: if a paper appears in any held-out split, generated queries for that paper should not be used for training.
 
 ## Review Heuristics
 

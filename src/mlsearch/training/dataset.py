@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mlsearch.benchmark.review import load_reviewed_queries
+from mlsearch.benchmark.splits import all_held_out_eval_paths
 from mlsearch.data.models import ArxivPaper
 from mlsearch.pipelines.generate_queries import QUERY_PREFIXES, keyword_tokens, load_query_candidates, title_overlap_ratio
 from mlsearch.pipelines.validate_corpus import load_corpus
@@ -25,7 +26,7 @@ def build_training_examples(
     *,
     candidates_path: Path,
     corpus_path: Path,
-    held_out_eval_path: Path | None = None,
+    held_out_eval_path: Path | list[Path] | None = None,
     max_examples: int | None = None,
     seed: int = 0,
     question_prefix_augmentation: bool = False,
@@ -78,14 +79,25 @@ def build_training_examples(
     return examples
 
 
-def _load_held_out_eval_filters(path: Path | None) -> tuple[set[str], set[str]]:
-    if path is None or not path.exists():
+def _load_held_out_eval_filters(path: Path | list[Path] | None) -> tuple[set[str], set[str]]:
+    paths = _normalize_held_out_paths(path)
+    if not paths:
         return set(), set()
-    reviewed_queries = load_reviewed_queries(path)
+    reviewed_queries = []
+    for held_out_path in paths:
+        reviewed_queries.extend(load_reviewed_queries(held_out_path))
     return (
         {query.query_id for query in reviewed_queries},
         {query.source_paper_id for query in reviewed_queries},
     )
+
+
+def _normalize_held_out_paths(path: Path | list[Path] | None) -> list[Path]:
+    if path is None:
+        return [candidate for candidate in all_held_out_eval_paths() if candidate.exists()]
+    if isinstance(path, list):
+        return [candidate for candidate in path if candidate.exists()]
+    return [path] if path.exists() else []
 
 
 def expand_training_query_texts(

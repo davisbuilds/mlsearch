@@ -54,6 +54,7 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
 
     review = nested.add_parser("sample-review", help="Sample queries for manual review.")
     review.add_argument("--count", type=int, default=30, help="Review sample size.")
+    review.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to sample into.")
     review.add_argument(
         "--include-reviewed",
         action="store_true",
@@ -67,6 +68,7 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
         default=str(PATHS.data_benchmark / "reviewed" / "review_sample.csv"),
         help="Reviewed CSV to import into the held-out eval split.",
     )
+    finalize.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to finalize into.")
     finalize.set_defaults(handler=_handle_benchmark_finalize_review)
 
     archive = nested.add_parser("archive-reviewed", help="Archive the current review artifacts under a label.")
@@ -87,6 +89,7 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
         default=str(PATHS.data_benchmark / "reviewed" / "review_sample.csv"),
         help="Reviewed CSV to summarize.",
     )
+    stats.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to inspect.")
     stats.set_defaults(handler=_handle_benchmark_review_stats)
 
     next_item = nested.add_parser("review-next", help="Show the next pending review row with source-paper context.")
@@ -100,6 +103,7 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
         default=None,
         help="Inspect a specific query id instead of the next pending row.",
     )
+    next_item.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to inspect.")
     next_item.set_defaults(handler=_handle_benchmark_review_next)
 
     review_loop_parser = nested.add_parser(
@@ -122,6 +126,7 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
         default=None,
         help="Maximum number of rows to process before exiting.",
     )
+    review_loop_parser.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to edit.")
     review_loop_parser.set_defaults(handler=_handle_benchmark_review_loop)
 
 
@@ -143,6 +148,7 @@ def _add_eval_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
     nested = parser.add_subparsers(dest="eval_command", required=True)
 
     baseline = nested.add_parser("baseline", help="Run the zero-shot baseline evaluation.")
+    baseline.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to evaluate.")
     baseline.set_defaults(handler=_handle_eval_baseline)
 
     baseline_rerank = nested.add_parser("baseline-rerank", help="Run baseline retrieval plus second-stage reranking.")
@@ -158,10 +164,12 @@ def _add_eval_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
         help="How many retrieved papers to rerank per query.",
     )
     baseline_rerank.add_argument("--top-k", type=int, default=10, help="Eval cutoff after reranking.")
+    baseline_rerank.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to evaluate.")
     baseline_rerank.set_defaults(handler=_handle_eval_baseline_rerank)
 
     compare = nested.add_parser("compare", help="Compare a trained model to baseline.")
     compare.add_argument("--model", default="latest", help="Model checkpoint alias.")
+    compare.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to evaluate.")
     compare.add_argument(
         "--record-results",
         action="store_true",
@@ -283,13 +291,24 @@ def _handle_benchmark_sample_review(args: argparse.Namespace) -> int:
         config_path=PATHS.configs / "benchmark.yaml",
         count=args.count,
         include_reviewed=args.include_reviewed,
+        split=args.split,
     )
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
     return 0
 
 
+def _resolve_review_input_path(input_value: str, *, split: str) -> Path | None:
+    default_dev_path = str(PATHS.data_benchmark / "reviewed" / "review_sample.csv")
+    if input_value == default_dev_path and split != "dev":
+        return None
+    return PATHS.root / input_value if not Path(input_value).is_absolute() else Path(input_value)
+
+
 def _handle_benchmark_finalize_review(args: argparse.Namespace) -> int:
-    report = finalize_review_set(review_path=PATHS.root / args.input if not Path(args.input).is_absolute() else Path(args.input))
+    report = finalize_review_set(
+        review_path=_resolve_review_input_path(args.input, split=args.split),
+        split=args.split,
+    )
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
     return 0
 
@@ -309,16 +328,16 @@ def _handle_benchmark_diagnostics(args: argparse.Namespace) -> int:
 
 
 def _handle_benchmark_review_stats(args: argparse.Namespace) -> int:
-    review_path = PATHS.root / args.input if not Path(args.input).is_absolute() else Path(args.input)
-    report = review_stats(review_path=review_path)
+    review_path = _resolve_review_input_path(args.input, split=args.split)
+    report = review_stats(review_path=review_path, split=args.split)
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
     return 0
 
 
 def _handle_benchmark_review_next(args: argparse.Namespace) -> int:
-    review_path = PATHS.root / args.input if not Path(args.input).is_absolute() else Path(args.input)
+    review_path = _resolve_review_input_path(args.input, split=args.split)
     try:
-        report = review_next(review_path=review_path, query_id=args.query_id)
+        report = review_next(review_path=review_path, query_id=args.query_id, split=args.split)
     except ValueError as exc:
         raise SystemExit(f"Review lookup failed: {exc}") from exc
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
@@ -326,9 +345,9 @@ def _handle_benchmark_review_next(args: argparse.Namespace) -> int:
 
 
 def _handle_benchmark_review_loop(args: argparse.Namespace) -> int:
-    review_path = PATHS.root / args.input if not Path(args.input).is_absolute() else Path(args.input)
+    review_path = _resolve_review_input_path(args.input, split=args.split)
     try:
-        report = review_loop(review_path=review_path, query_id=args.query_id, limit=args.limit)
+        report = review_loop(review_path=review_path, query_id=args.query_id, limit=args.limit, split=args.split)
     except ValueError as exc:
         raise SystemExit(f"Interactive review failed: {exc}") from exc
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
@@ -343,11 +362,11 @@ def _handle_index_build(args: argparse.Namespace) -> int:
     return 0
 
 
-def _handle_eval_baseline(_: argparse.Namespace) -> int:
+def _handle_eval_baseline(args: argparse.Namespace) -> int:
     from mlsearch.eval.run_eval import run_baseline_eval
 
     try:
-        report = run_baseline_eval()
+        report = run_baseline_eval(split=args.split)
     except FileNotFoundError as exc:
         raise SystemExit(f"Missing retrieval artifacts: {exc}") from exc
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
@@ -362,6 +381,7 @@ def _handle_eval_baseline_rerank(args: argparse.Namespace) -> int:
             reranker_model_name=args.reranker_model,
             rerank_depth=args.rerank_depth,
             top_k=args.top_k,
+            split=args.split,
         )
     except FileNotFoundError as exc:
         raise SystemExit(f"Missing retrieval artifacts: {exc}") from exc
@@ -372,7 +392,7 @@ def _handle_eval_baseline_rerank(args: argparse.Namespace) -> int:
 def _handle_eval_compare(args: argparse.Namespace) -> int:
     from mlsearch.eval.run_eval import run_compare_eval
 
-    report = run_compare_eval(model_ref=args.model, record_results=args.record_results)
+    report = run_compare_eval(model_ref=args.model, record_results=args.record_results, split=args.split)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 

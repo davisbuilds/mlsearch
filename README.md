@@ -68,13 +68,19 @@ The benchmark review flow is a core part of the project:
 2. Generate candidates with `benchmark generate` and inspect overlap with `benchmark diagnostics`.
 3. Export a review sample with `benchmark sample-review`.
    By default this excludes query ids already present in archived review batches and the current held-out eval. Use `--include-reviewed` only if you intentionally want repeats.
+   Use `--split dev` for the tuning split and `--split test` for the blind split.
 4. Inspect progress with `benchmark review-stats`.
 5. Step through rows with `benchmark review-loop` or inspect one row with `benchmark review-next`.
 6. Mark each query as `accept`, `edit`, or `reject`.
 7. Finalize the reviewed split with `benchmark finalize-review`.
-   This now merges the reviewed batch into the existing held-out eval instead of replacing it.
+   This now merges the reviewed batch into the existing split instead of replacing it.
 
-The finalized `held_out_eval.jsonl` is the eval source for `eval baseline` and `eval compare`, and those held-out source papers are excluded from training, not just the exact reviewed query ids.
+The main workflow now supports two reviewed splits:
+
+- `dev`: the working benchmark for iteration and autoresearch loops
+- `test`: a blind reviewed benchmark that should stay out of day-to-day tuning
+
+The finalized reviewed files are the eval source for `eval baseline`, `eval baseline-rerank`, and `eval compare`, and all held-out source papers across reviewed splits are excluded from training.
 
 ## CLI Surface
 
@@ -99,6 +105,7 @@ Useful review helpers:
 Trustworthy retrieval helpers:
 
 - `eval baseline-rerank`
+- `eval baseline-rerank --split test`
 - `search --rerank`
 
 ## Constraints

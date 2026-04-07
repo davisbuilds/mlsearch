@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from mlsearch.benchmark.review import load_reviewed_queries
+from mlsearch.benchmark.splits import DEFAULT_REVIEW_SPLIT, held_out_eval_path
 from mlsearch.benchmark.schema import QueryCandidate, ReviewedQuery
 from mlsearch.experiments.compare import compare_metric_sets
 from mlsearch.experiments.logging import append_result
@@ -42,10 +43,11 @@ def run_baseline_eval(
     candidates_path: Path | None = None,
     output_dir: Path | None = None,
     top_k: int = 10,
+    split: str = DEFAULT_REVIEW_SPLIT,
 ) -> BaselineEvalReport:
     selected_candidates_path, candidates = resolve_eval_candidates(
         generated_candidates_path=candidates_path or (PATHS.data_benchmark / "generated" / "query_candidates.jsonl"),
-        reviewed_eval_path=PATHS.data_benchmark / "reviewed" / "held_out_eval.jsonl",
+        reviewed_eval_path=held_out_eval_path(split=split),
     )
     metrics, report_path = _run_eval(
         candidates=candidates,
@@ -70,10 +72,11 @@ def run_baseline_rerank_eval(
     top_k: int = 10,
     reranker_model_name: str = DEFAULT_RERANKER_MODEL_NAME,
     rerank_depth: int = 10,
+    split: str = DEFAULT_REVIEW_SPLIT,
 ) -> BaselineEvalReport:
     selected_candidates_path, candidates = resolve_eval_candidates(
         generated_candidates_path=candidates_path or (PATHS.data_benchmark / "generated" / "query_candidates.jsonl"),
-        reviewed_eval_path=PATHS.data_benchmark / "reviewed" / "held_out_eval.jsonl",
+        reviewed_eval_path=held_out_eval_path(split=split),
     )
     metrics, report_path = _run_eval(
         candidates=candidates,
@@ -93,11 +96,12 @@ def run_baseline_rerank_eval(
     )
 
 
-def run_model_eval(*, model_ref: str | Path, top_k: int = 10) -> ModelEvalReport:
+def run_model_eval(*, model_ref: str | Path, top_k: int = 10, split: str = DEFAULT_REVIEW_SPLIT) -> ModelEvalReport:
     return _run_checkpoint_eval(
         model_ref=model_ref,
         top_k=top_k,
         report_prefix="compare",
+        split=split,
     )
 
 
@@ -109,6 +113,7 @@ def run_rerank_experiment(
     rerank_depth: int = 10,
     top_k: int = 10,
     record_results: bool,
+    split: str = DEFAULT_REVIEW_SPLIT,
 ) -> dict[str, object]:
     candidate_report = _run_checkpoint_eval(
         model_ref=retriever_model_ref,
@@ -116,6 +121,7 @@ def run_rerank_experiment(
         report_prefix="rerank",
         reranker_model_name=reranker_model_name,
         rerank_depth=rerank_depth,
+        split=split,
     )
     reference_name, reference_report = load_reference_report(reference_model_ref, top_k=top_k)
     ensure_report_compatible(reference_report, candidates_path=Path(candidate_report.candidates_path), report_label=reference_name)
@@ -173,13 +179,14 @@ def _run_checkpoint_eval(
     report_prefix: str,
     reranker_model_name: str | None = None,
     rerank_depth: int = 10,
+    split: str = DEFAULT_REVIEW_SPLIT,
 ) -> ModelEvalReport:
     checkpoint = _resolve_checkpoint(model_ref)
     compare_index_dir = PATHS.artifacts_index / checkpoint.name
     build_index(output_dir=compare_index_dir, model_name=str(checkpoint))
     candidate_path, candidates = resolve_eval_candidates(
         generated_candidates_path=PATHS.data_benchmark / "generated" / "query_candidates.jsonl",
-        reviewed_eval_path=PATHS.data_benchmark / "reviewed" / "held_out_eval.jsonl",
+        reviewed_eval_path=held_out_eval_path(split=split),
     )
     candidate_metrics, report_path = _run_eval(
         candidates=candidates,
@@ -201,8 +208,8 @@ def _run_checkpoint_eval(
     )
 
 
-def run_compare_eval(*, model_ref: str, record_results: bool) -> dict[str, object]:
-    model_report = run_model_eval(model_ref=model_ref, top_k=10)
+def run_compare_eval(*, model_ref: str, record_results: bool, split: str = DEFAULT_REVIEW_SPLIT) -> dict[str, object]:
+    model_report = run_model_eval(model_ref=model_ref, top_k=10, split=split)
     baseline_report = load_latest_report("baseline")
     ensure_baseline_compatible(baseline_report, candidates_path=Path(model_report.candidates_path))
     baseline_metrics = baseline_report["metrics"]

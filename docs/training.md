@@ -46,8 +46,9 @@ Compare reports also include `query_deltas`, which make it easy to see which rev
 ## Split Discipline
 
 - Training examples come from generated query candidates.
-- Any query promoted into `data/benchmark/reviewed/held_out_eval.jsonl` is excluded from training.
-- Any generated query for a held-out eval `source_paper_id` is also excluded, so the split is paper-disjoint from training rather than only query-disjoint.
+- Any query promoted into a reviewed split such as `data/benchmark/reviewed/held_out_eval.jsonl` or `data/benchmark/reviewed/held_out_eval_test.jsonl` is excluded from training.
+- Any generated query for a held-out eval `source_paper_id` is also excluded, so training is paper-disjoint from all reviewed splits rather than only query-disjoint.
+- Use `dev` for iterative tuning and `test` for blind checks.
 - `eval compare` requires a baseline report built against the same benchmark split and will refuse to compare against a stale baseline.
 
 ## Sweep Loop
@@ -74,4 +75,5 @@ The intended use is small and disciplined. Prefer 3-8 runs over a reviewed bench
 For the currently most trustworthy interactive path, use:
 
 - `uv run mlsearch eval baseline-rerank`
+- `uv run mlsearch eval baseline-rerank --split test`
 - `uv run mlsearch search "your query" --rerank`

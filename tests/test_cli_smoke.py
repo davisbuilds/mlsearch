@@ -53,12 +53,28 @@ def test_benchmark_finalize_review_parser_accepts_input_override() -> None:
     assert args.input == "data/benchmark/reviewed/review_sample.csv"
 
 
+def test_benchmark_finalize_review_parser_accepts_split() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["benchmark", "finalize-review", "--split", "test"])
+    assert args.command == "benchmark"
+    assert args.benchmark_command == "finalize-review"
+    assert args.split == "test"
+
+
 def test_benchmark_review_stats_parser_accepts_input_override() -> None:
     parser = cli._build_parser()
     args = parser.parse_args(["benchmark", "review-stats", "--input", "data/benchmark/reviewed/review_sample.csv"])
     assert args.command == "benchmark"
     assert args.benchmark_command == "review-stats"
     assert args.input == "data/benchmark/reviewed/review_sample.csv"
+
+
+def test_benchmark_review_stats_parser_accepts_split() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["benchmark", "review-stats", "--split", "test"])
+    assert args.command == "benchmark"
+    assert args.benchmark_command == "review-stats"
+    assert args.split == "test"
 
 
 def test_benchmark_review_next_parser_accepts_query_id_override() -> None:
@@ -204,6 +220,23 @@ def test_eval_baseline_rerank_parser_accepts_rerank_options() -> None:
     assert args.top_k == 10
 
 
+def test_eval_baseline_parser_accepts_split() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["eval", "baseline", "--split", "test"])
+    assert args.command == "eval"
+    assert args.eval_command == "baseline"
+    assert args.split == "test"
+
+
+def test_eval_compare_parser_accepts_split() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["eval", "compare", "--model", "latest", "--split", "test"])
+    assert args.command == "eval"
+    assert args.eval_command == "compare"
+    assert args.model == "latest"
+    assert args.split == "test"
+
+
 def test_benchmark_sample_review_parser_accepts_include_reviewed() -> None:
     parser = cli._build_parser()
     args = parser.parse_args(["benchmark", "sample-review", "--count", "10", "--include-reviewed"])
@@ -211,3 +244,12 @@ def test_benchmark_sample_review_parser_accepts_include_reviewed() -> None:
     assert args.benchmark_command == "sample-review"
     assert args.count == 10
     assert args.include_reviewed is True
+
+
+def test_benchmark_sample_review_parser_accepts_split() -> None:
+    parser = cli._build_parser()
+    args = parser.parse_args(["benchmark", "sample-review", "--count", "10", "--split", "test"])
+    assert args.command == "benchmark"
+    assert args.benchmark_command == "sample-review"
+    assert args.count == 10
+    assert args.split == "test"

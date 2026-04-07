@@ -12,6 +12,7 @@ from sentence_transformers import InputExample, SentenceTransformer, losses
 from sentence_transformers.util import batch_to_device
 from torch.utils.data import DataLoader
 
+from mlsearch.benchmark.splits import all_held_out_eval_paths
 from mlsearch.config import TrainConfig, load_train_config
 from mlsearch.paths import PATHS
 from mlsearch.retrieval.embedder import detect_device
@@ -37,7 +38,7 @@ def train_retriever(*, config_path: Path | None = None, config: TrainConfig | No
     examples = build_training_examples(
         candidates_path=PATHS.data_benchmark / "generated" / "query_candidates.jsonl",
         corpus_path=PATHS.data_processed / "corpus.jsonl",
-        held_out_eval_path=PATHS.data_benchmark / "reviewed" / "held_out_eval.jsonl",
+        held_out_eval_path=all_held_out_eval_paths(),
         max_examples=resolved_config.max_examples,
         seed=resolved_config.seed,
         question_prefix_augmentation=resolved_config.question_prefix_augmentation,

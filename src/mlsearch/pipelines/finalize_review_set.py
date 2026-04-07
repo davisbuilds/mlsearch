@@ -5,8 +5,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mlsearch.benchmark.review import finalize_review_csv, load_reviewed_queries
+from mlsearch.benchmark.splits import (
+    DEFAULT_REVIEW_SPLIT,
+    held_out_eval_manifest_path,
+    held_out_eval_path,
+    review_sample_path,
+)
 from mlsearch.benchmark.schema import ReviewedQuery
-from mlsearch.paths import PATHS
 
 
 @dataclass(frozen=True)
@@ -19,12 +24,13 @@ class FinalizeReviewPipelineReport:
     rejected_count: int
     source_paper_count: int
     styles: dict[str, int]
+    split: str
 
 
-def finalize_review_set(*, review_path: Path | None = None) -> FinalizeReviewPipelineReport:
-    resolved_review_path = review_path or (PATHS.data_benchmark / "reviewed" / "review_sample.csv")
-    output_path = PATHS.data_benchmark / "reviewed" / "held_out_eval.jsonl"
-    manifest_path = PATHS.data_benchmark / "reviewed" / "held_out_eval_manifest.json"
+def finalize_review_set(*, review_path: Path | None = None, split: str = DEFAULT_REVIEW_SPLIT) -> FinalizeReviewPipelineReport:
+    resolved_review_path = review_path or review_sample_path(split=split)
+    output_path = held_out_eval_path(split=split)
+    manifest_path = held_out_eval_manifest_path(split=split)
     previous_queries = load_reviewed_queries(output_path) if output_path.exists() else []
     temp_output_path = output_path.with_suffix(".new.jsonl")
     report = finalize_review_csv(
@@ -58,6 +64,7 @@ def finalize_review_set(*, review_path: Path | None = None) -> FinalizeReviewPip
         rejected_count=report.rejected_count,
         source_paper_count=len({query.source_paper_id for query in merged_queries}),
         styles=_count_styles(merged_queries),
+        split=split,
     )
 
 

@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from mlsearch.benchmark.review import write_review_csv
+from mlsearch.benchmark.splits import held_out_eval_path, review_sample_path
 from mlsearch.benchmark.schema import QueryCandidate, ReviewedQuery
 from mlsearch.pipelines.finalize_review_set import finalize_review_set
 from mlsearch.pipelines.sample_review_set import load_reviewed_query_ids, load_reviewed_source_paper_ids, sample_review_set
@@ -48,6 +49,7 @@ def test_load_reviewed_query_ids_includes_archived_and_held_out(tmp_path: Path, 
 
     fake_paths = SimpleNamespace(data_benchmark=root / "data" / "benchmark")
     monkeypatch.setattr("mlsearch.pipelines.sample_review_set.PATHS", fake_paths)
+    monkeypatch.setattr("mlsearch.benchmark.splits.PATHS", fake_paths)
 
     reviewed_ids = load_reviewed_query_ids()
 
@@ -91,6 +93,7 @@ def test_load_reviewed_source_paper_ids_includes_archived_and_held_out(tmp_path:
 
     fake_paths = SimpleNamespace(data_benchmark=root / "data" / "benchmark")
     monkeypatch.setattr("mlsearch.pipelines.sample_review_set.PATHS", fake_paths)
+    monkeypatch.setattr("mlsearch.benchmark.splits.PATHS", fake_paths)
 
     reviewed_source_paper_ids = load_reviewed_source_paper_ids()
 
@@ -142,7 +145,7 @@ def test_finalize_review_set_merges_existing_held_out_eval(tmp_path: Path, monke
     )
 
     fake_paths = SimpleNamespace(data_benchmark=root / "data" / "benchmark")
-    monkeypatch.setattr("mlsearch.pipelines.finalize_review_set.PATHS", fake_paths)
+    monkeypatch.setattr("mlsearch.benchmark.splits.PATHS", fake_paths)
 
     report = finalize_review_set(review_path=review_path)
 
@@ -209,6 +212,7 @@ def test_sample_review_set_does_not_fallback_to_reviewed_candidates_when_pool_is
     fake_paths = SimpleNamespace(data_benchmark=benchmark_dir)
     fake_config = SimpleNamespace(seed=7)
     monkeypatch.setattr("mlsearch.pipelines.sample_review_set.PATHS", fake_paths)
+    monkeypatch.setattr("mlsearch.benchmark.splits.PATHS", fake_paths)
     monkeypatch.setattr("mlsearch.pipelines.sample_review_set.load_benchmark_config", lambda _path: fake_config)
 
     report = sample_review_set(config_path=root / "configs" / "benchmark.yaml", count=10)
@@ -217,3 +221,13 @@ def test_sample_review_set_does_not_fallback_to_reviewed_candidates_when_pool_is
     assert report.count == 1
     assert len(review_rows) == 1
     assert review_rows[0]["query_id"] == "paper-2-keyword"
+
+
+def test_review_split_paths_use_legacy_names_for_dev_and_suffixed_names_for_test(tmp_path: Path, monkeypatch) -> None:
+    fake_paths = SimpleNamespace(data_benchmark=tmp_path / "data" / "benchmark")
+    monkeypatch.setattr("mlsearch.benchmark.splits.PATHS", fake_paths)
+
+    assert review_sample_path(split="dev") == fake_paths.data_benchmark / "reviewed" / "review_sample.csv"
+    assert review_sample_path(split="test") == fake_paths.data_benchmark / "reviewed" / "review_sample_test.csv"
+    assert held_out_eval_path(split="dev") == fake_paths.data_benchmark / "reviewed" / "held_out_eval.jsonl"
+    assert held_out_eval_path(split="test") == fake_paths.data_benchmark / "reviewed" / "held_out_eval_test.jsonl"
