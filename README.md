@@ -2,7 +2,7 @@
 
 MLSearch is a local-first retrieval project for arXiv `cs.LG` papers.
 
-The repo is built around one idea: treat paper search as a benchmarked ML system, not just a demo. The workflow fixes the corpus and evaluation harness, generates mixed-style human search queries, keeps a reviewed held-out eval split, and compares zero-shot retrieval against local fine-tuning.
+The repo is built around one idea: treat paper search as a benchmarked ML system, not just a demo. The workflow fixes the corpus and evaluation harness, generates mixed-style human search queries, keeps reviewed `dev` and blind `test` eval splits, and judges retrieval changes mechanically on those held-out benchmarks.
 
 ## Current Scope
 
@@ -11,8 +11,9 @@ The current v1 target is:
 - a reproducible `cs.LG` corpus covering April 1, 2016 through March 31, 2026
 - paper-level retrieval over title plus abstract
 - synthetic-first query generation with manual review
-- a reviewed held-out evaluation split
+- reviewed `dev` and blind `test` evaluation splits
 - local embedding-based indexing and retrieval
+- optional second-stage reranking over the retriever shortlist
 - a CLI-first search and review workflow
 
 This is intentionally narrow. There is no full-text PDF/HTML ingestion in v1, and the project is optimized for local iteration on Apple Silicon rather than large-scale training infrastructure.
@@ -26,6 +27,12 @@ Most paper-search prototypes stop at “embed some abstracts and query them.” 
 - reviewed queries are separated from training data
 - comparisons are mechanical through a results ledger
 - manual review is part of the benchmark, not an afterthought
+
+The current most trustworthy path is:
+
+- zero-shot retriever over `BAAI/bge-small-en-v1.5`
+- second-stage reranker `cross-encoder/ms-marco-MiniLM-L-6-v2`
+- blind validation on the reviewed `test` split
 
 ## Install
 
@@ -111,7 +118,7 @@ Trustworthy retrieval helpers:
 ## Constraints
 
 - fully local and cheap
-- Apple Silicon Mac mini M4 as the primary machine
+- Apple Silicon as the primary target
 - no full-text HTML/PDF ingestion in v1
 - CLI-first instead of web-first
 

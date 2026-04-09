@@ -71,9 +71,20 @@ The intended use is small and disciplined. Prefer 3-8 runs over a reviewed bench
 - The reranker only reorders the shortlist.
 - The experiment compares reranked metrics against a reference system, which can be `baseline`, `latest`, or an explicit checkpoint name.
 - Results are written to `rerank-*.json` and can also be appended to `results.tsv`.
+- Blind reranker validation currently lives on the `eval baseline-rerank --split test` path. Use that for blind checks until `experiment rerank` gains split-aware support.
 
 For the currently most trustworthy interactive path, use:
 
 - `uv run mlsearch eval baseline-rerank`
 - `uv run mlsearch eval baseline-rerank --split test`
 - `uv run mlsearch search "your query" --rerank`
+
+The current best-known reranker setup on the blind `test` split is:
+
+- reranker: `cross-encoder/ms-marco-MiniLM-L-6-v2`
+- `rerank_depth=10`
+
+On the `50`-query blind `test` split:
+
+- `rerank_depth=5` dropped below perfect ranking quality
+- `cross-encoder/ms-marco-TinyBERT-L-2-v2` was close, but still worse than the default reranker
