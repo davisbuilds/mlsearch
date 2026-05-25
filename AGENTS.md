@@ -11,6 +11,14 @@ The important invariant is:
 - mutate only narrow retrieval, training, and experiment surfaces
 - judge changes mechanically on the reviewed held-out eval
 
+## Documentation Map
+
+- `docs/architecture.md` — project intent, initial layout, design principles.
+- `docs/benchmark.md` — benchmark inputs, generated artifacts, query types, review workflow, split rules.
+- `docs/training.md` — training path, device choice, commands, split discipline, sweep loop, rerank experiment.
+
+Run `uv run mlsearch --help` to list all CLI commands (`corpus`, `benchmark`, `index`, `eval`, `train`, `experiment`, `search`).
+
 ## Core Workflow
 
 1. Build or validate the local corpus.
@@ -86,3 +94,8 @@ uv run python -m pytest -q
 Prefer targeted test slices while iterating, then run the full suite before claiming completion.
 
 For benchmark-affecting changes, rerun the relevant eval commands and report absolute metrics, not just status labels.
+
+## Working Agreement
+
+- **Push back before building.** If a request is incoherent or self-contradictory, or a spec/plan is vague or skips key decisions, stop and interview me — ask clarifying questions and confirm intent before writing code or changing files. Don't guess at scope or comply silently. (Clear, well-scoped requests don't need this.)
+- **Keep docs current.** After a significant change, PR, or completed spec/plan, update any now-stale reference docs under `docs/` (`architecture.md`, `benchmark.md`, `training.md`) so they match shipped behavior. Skip this for trivial changes.
