@@ -4,6 +4,34 @@ MLSearch is a local-first retrieval project for arXiv `cs.LG` papers.
 
 The repo is built around one idea: treat paper search as a benchmarked ML system, not just a demo. The workflow fixes the corpus and evaluation harness, generates mixed-style human search queries, keeps reviewed `dev` and blind `test` eval splits, and judges retrieval changes mechanically on those held-out benchmarks.
 
+## Agent Setup
+
+New here? Paste the prompt below into your coding agent (Claude Code, Codex, etc.) and it will install and verify the CLI, then walk you to the first smoke run.
+
+```text
+Set up the `mlsearch` repo for me. It's a local-first, benchmark-first retrieval
+project for arXiv cs.LG papers (embeddings + optional reranking, judged on reviewed
+held-out eval splits). Python + uv + PyTorch + sentence-transformers; optimized for
+Apple Silicon. No secrets or API keys — everything runs locally.
+
+Do this, in order:
+1. Install deps. Ensure `uv` is installed (https://astral.sh/uv); run
+   `uv sync --group dev` from the repo root. Clone
+   https://github.com/davisbuilds/mlsearch.git and cd in first if needed.
+2. Verify the CLI is wired up WITHOUT downloading anything heavy: run
+   `uv run mlsearch --help` and `uv run ruff check .`. Both should succeed. If
+   either fails, show me the error and stop. (The full pytest suite pulls in
+   torch/sentence-transformers and is heavy — only run `uv run python -m pytest -q`
+   if I ask.)
+3. Report back: confirm the CLI runs and lint passed, then give me the first real
+   smoke path from the Quickstart, which downloads a tiny corpus from arXiv:
+   `uv run mlsearch corpus build --limit 10` → `uv run mlsearch corpus validate`.
+
+Don't commit anything.
+```
+
+Prefer to do it yourself? The manual steps are below.
+
 ## Current Scope
 
 The current v1 target is:
