@@ -88,12 +88,16 @@ Examples of good directions:
 Use:
 
 ```bash
+uv run ruff check .
 uv run python -m pytest -q
 ```
 
 Prefer targeted test slices while iterating, then run the full suite before claiming completion.
 
 For benchmark-affecting changes, rerun the relevant eval commands and report absolute metrics, not just status labels.
+
+- **Ruff** enforces style + small fixups (`E, F, I, B, UP, W, C4, SIM, ERA, RUF, PIE`); `ruff format` keeps formatting consistent. Fix violations the linter flags rather than restating rules here.
+- **Dead-code gate** (`tests/test_dead_code.py`): static checks for unused public symbols, orphaned modules, and unreachable code. It owns cross-file dead code; ruff `F`/`ERA` own within-file unused imports/locals and commented-out code. When a symbol/module is intentionally unreferenced (external API, framework-invoked), add it to `SYMBOL_EXCEPTIONS`/`MODULE_EXCEPTIONS` with a reason rather than silencing the test.
 
 ## Working Agreement
 

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from mlsearch.paths import PATHS
 
 
 def create_run_dir(prefix: str) -> Path:
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     run_dir = PATHS.artifacts_models / f"{prefix}-{timestamp}"
     run_dir.mkdir(parents=True, exist_ok=True)
     return run_dir

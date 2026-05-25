@@ -5,13 +5,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mlsearch.benchmark.review import finalize_review_csv, load_reviewed_queries
+from mlsearch.benchmark.schema import ReviewedQuery
 from mlsearch.benchmark.splits import (
     DEFAULT_REVIEW_SPLIT,
     held_out_eval_manifest_path,
     held_out_eval_path,
     review_sample_path,
 )
-from mlsearch.benchmark.schema import ReviewedQuery
 
 
 @dataclass(frozen=True)
@@ -27,7 +27,9 @@ class FinalizeReviewPipelineReport:
     split: str
 
 
-def finalize_review_set(*, review_path: Path | None = None, split: str = DEFAULT_REVIEW_SPLIT) -> FinalizeReviewPipelineReport:
+def finalize_review_set(
+    *, review_path: Path | None = None, split: str = DEFAULT_REVIEW_SPLIT
+) -> FinalizeReviewPipelineReport:
     resolved_review_path = review_path or review_sample_path(split=split)
     output_path = held_out_eval_path(split=split)
     manifest_path = held_out_eval_manifest_path(split=split)
@@ -47,13 +49,19 @@ def finalize_review_set(*, review_path: Path | None = None, split: str = DEFAULT
         {
             "accepted_count": len(new_queries),
             "merged_count": len(merged_queries),
-            "added_count": sum(1 for query in new_queries if query.query_id not in {item.query_id for item in previous_queries}),
+            "added_count": sum(
+                1
+                for query in new_queries
+                if query.query_id not in {item.query_id for item in previous_queries}
+            ),
             "previous_count": len(previous_queries),
             "source_paper_count": len({query.source_paper_id for query in merged_queries}),
             "styles": _count_styles(merged_queries),
         }
     )
-    manifest_path.write_text(json.dumps(manifest_payload, indent=2, sort_keys=True), encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest_payload, indent=2, sort_keys=True), encoding="utf-8"
+    )
     previous_ids = {query.query_id for query in previous_queries}
     return FinalizeReviewPipelineReport(
         output_path=str(output_path),
@@ -68,7 +76,9 @@ def finalize_review_set(*, review_path: Path | None = None, split: str = DEFAULT
     )
 
 
-def merge_reviewed_queries(previous: list[ReviewedQuery], current: list[ReviewedQuery]) -> list[ReviewedQuery]:
+def merge_reviewed_queries(
+    previous: list[ReviewedQuery], current: list[ReviewedQuery]
+) -> list[ReviewedQuery]:
     merged: dict[str, ReviewedQuery] = {query.query_id: query for query in previous}
     for query in current:
         merged[query.query_id] = query

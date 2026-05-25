@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, replace
+from dataclasses import dataclass, replace
 from datetime import date, timedelta
 from pathlib import Path
 
-from mlsearch.config import CorpusConfig, load_corpus_config
+from mlsearch.config import load_corpus_config
 from mlsearch.data.arxiv_client import ArxivClient, DateWindow, build_search_query
 from mlsearch.data.models import ArxivPaper
 from mlsearch.paths import PATHS

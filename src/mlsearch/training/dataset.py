@@ -6,8 +6,12 @@ from pathlib import Path
 
 from mlsearch.benchmark.review import load_reviewed_queries
 from mlsearch.benchmark.splits import all_held_out_eval_paths
-from mlsearch.data.models import ArxivPaper
-from mlsearch.pipelines.generate_queries import QUERY_PREFIXES, keyword_tokens, load_query_candidates, title_overlap_ratio
+from mlsearch.pipelines.generate_queries import (
+    QUERY_PREFIXES,
+    keyword_tokens,
+    load_query_candidates,
+    title_overlap_ratio,
+)
 from mlsearch.pipelines.validate_corpus import load_corpus
 from mlsearch.retrieval.index import format_document
 
@@ -58,7 +62,11 @@ def build_training_examples(
                 question_prefix_augmentation=question_prefix_augmentation,
             )
         ):
-            query_id = candidate.query_id if variant_index == 0 else f"{candidate.query_id}-aug{variant_index}"
+            query_id = (
+                candidate.query_id
+                if variant_index == 0
+                else f"{candidate.query_id}-aug{variant_index}"
+            )
             examples.append(
                 TrainingExample(
                     query_id=query_id,

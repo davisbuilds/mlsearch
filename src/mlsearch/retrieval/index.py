@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -51,7 +51,7 @@ def build_index(
                 "count": len(papers),
                 "model_name": model_name,
                 "embedding_dim": int(embeddings.shape[1]),
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
             },
             indent=2,
             sort_keys=True,
@@ -68,7 +68,9 @@ def build_index(
     )
 
 
-def load_index(index_dir: Path | None = None) -> tuple[list[ArxivPaper], np.ndarray, dict[str, object]]:
+def load_index(
+    index_dir: Path | None = None,
+) -> tuple[list[ArxivPaper], np.ndarray, dict[str, object]]:
     resolved_dir = index_dir or PATHS.artifacts_index
     documents_path = resolved_dir / "documents.jsonl"
     embeddings_path = resolved_dir / "embeddings.npy"

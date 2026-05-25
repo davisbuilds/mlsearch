@@ -37,9 +37,13 @@ def build_search_query(category: str, start_date: str, end_date: str) -> str:
 
 def parse_feed(xml_text: str) -> ArxivQueryPage:
     root = ET.fromstring(xml_text)
-    total_results = int(root.findtext("opensearch:totalResults", default="0", namespaces=OPENSEARCH_NS))
+    total_results = int(
+        root.findtext("opensearch:totalResults", default="0", namespaces=OPENSEARCH_NS)
+    )
     start_index = int(root.findtext("opensearch:startIndex", default="0", namespaces=OPENSEARCH_NS))
-    items_per_page = int(root.findtext("opensearch:itemsPerPage", default="0", namespaces=OPENSEARCH_NS))
+    items_per_page = int(
+        root.findtext("opensearch:itemsPerPage", default="0", namespaces=OPENSEARCH_NS)
+    )
 
     papers: list[ArxivPaper] = []
     for entry in root.findall("atom:entry", ATOM_NS):

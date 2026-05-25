@@ -55,7 +55,10 @@ def search_many(
     papers, embeddings, manifest = load_index(index_dir)
     embedder = TextEmbedder(EmbedderConfig(model_name=str(manifest["model_name"])))
     query_embeddings = embedder.embed_queries(queries)
-    return [rank_hits(query_embedding, embeddings, papers, top_k=top_k) for query_embedding in query_embeddings]
+    return [
+        rank_hits(query_embedding, embeddings, papers, top_k=top_k)
+        for query_embedding in query_embeddings
+    ]
 
 
 def rank_hits(

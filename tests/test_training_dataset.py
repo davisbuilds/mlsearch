@@ -153,7 +153,9 @@ def test_build_training_examples_excludes_reviewed_eval_queries(tmp_path: Path) 
     assert examples[0].query_id == "paper-2-question"
 
 
-def test_build_training_examples_excludes_other_queries_from_held_out_source_papers(tmp_path: Path) -> None:
+def test_build_training_examples_excludes_other_queries_from_held_out_source_papers(
+    tmp_path: Path,
+) -> None:
     corpus_path = tmp_path / "corpus.jsonl"
     corpus_path.write_text(
         "\n".join(
@@ -265,7 +267,9 @@ def test_expand_training_query_texts_augment_question_prefixes() -> None:
     ]
 
 
-def test_build_training_examples_augment_question_queries_and_sample_deterministically(tmp_path: Path) -> None:
+def test_build_training_examples_augment_question_queries_and_sample_deterministically(
+    tmp_path: Path,
+) -> None:
     corpus_path = tmp_path / "corpus.jsonl"
     corpus_path.write_text(
         "\n".join(

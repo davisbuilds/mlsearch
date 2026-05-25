@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import json
 import random
-from dataclasses import asdict
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import numpy as np
@@ -30,7 +29,9 @@ class TrainReport:
     seed: int
 
 
-def train_retriever(*, config_path: Path | None = None, config: TrainConfig | None = None) -> TrainReport:
+def train_retriever(
+    *, config_path: Path | None = None, config: TrainConfig | None = None
+) -> TrainReport:
     if (config_path is None) == (config is None):
         raise ValueError("Provide exactly one of config_path or config.")
     resolved_config = load_train_config(config_path) if config_path is not None else config
@@ -50,7 +51,9 @@ def train_retriever(*, config_path: Path | None = None, config: TrainConfig | No
     device = resolve_train_device(resolved_config.device)
     _seed_training(resolved_config.seed)
     model = SentenceTransformer(resolved_config.base_model_name, device=device)
-    train_examples = [InputExample(texts=[example.query_text, example.document_text]) for example in examples]
+    train_examples = [
+        InputExample(texts=[example.query_text, example.document_text]) for example in examples
+    ]
     train_dataloader = DataLoader(
         train_examples,
         shuffle=True,
@@ -65,7 +68,9 @@ def train_retriever(*, config_path: Path | None = None, config: TrainConfig | No
     losses_seen: list[float] = []
     for _ in range(resolved_config.num_epochs):
         for sentence_features, labels in train_dataloader:
-            sentence_features = [batch_to_device(features, model.device) for features in sentence_features]
+            sentence_features = [
+                batch_to_device(features, model.device) for features in sentence_features
+            ]
             if isinstance(labels, torch.Tensor):
                 labels = labels.to(model.device)
             optimizer.zero_grad()

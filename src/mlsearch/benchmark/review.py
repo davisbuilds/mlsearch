@@ -6,14 +6,13 @@ import json
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TextIO
 
 from mlsearch.benchmark.schema import QueryCandidate, ReviewedQuery
 from mlsearch.data.models import ArxivPaper
 from mlsearch.pipelines.validate_corpus import load_corpus
-
 
 REVIEW_COLUMNS = [
     "query_id",
@@ -103,7 +102,9 @@ def finalize_review_csv(
 
     rejected_count = _count_rejected_rows(review_path)
     styles = _count_styles(reviewed_queries)
-    resolved_manifest_path = manifest_path or output_path.with_name(f"{output_path.stem}_manifest.json")
+    resolved_manifest_path = manifest_path or output_path.with_name(
+        f"{output_path.stem}_manifest.json"
+    )
     resolved_manifest_path.write_text(
         json.dumps(
             {
@@ -139,7 +140,7 @@ def load_review_decisions(review_path: Path) -> list[ReviewedQuery]:
         raise FileNotFoundError(f"Review CSV not found: {review_path}")
 
     reviewed_queries: list[ReviewedQuery] = []
-    reviewed_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    reviewed_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     with review_path.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
         for row in reader:
@@ -184,7 +185,9 @@ def load_next_review_item(
     source_paper_id = _required_value(row, "source_paper_id")
     source_paper = _paper_payload(papers_by_id[source_paper_id])
     positive_papers = _resolve_papers(_split_pipe_values(row.get("positive_ids", "")), papers_by_id)
-    hard_negative_papers = _resolve_papers(_split_pipe_values(row.get("hard_negative_ids", "")), papers_by_id)
+    hard_negative_papers = _resolve_papers(
+        _split_pipe_values(row.get("hard_negative_ids", "")), papers_by_id
+    )
     return ReviewNextReport(
         review_path=str(review_path),
         query_id=_required_value(row, "query_id"),
@@ -268,7 +271,7 @@ def run_review_loop(
         rows = load_review_rows(review_path)
         try:
             row = _select_review_row(rows, query_id=selected_query_id)
-        except ValueError as exc:
+        except ValueError:
             stopped_reason = "no_pending" if query_id is None else "not_found"
             if processed_count == 0:
                 raise
@@ -280,7 +283,11 @@ def run_review_loop(
             query_id=row["query_id"],
         )
         _render_review_item(report, stdout)
-        command = _prompt(stdin, stdout, "Action [a]ccept [e]dit [r]eject [s]kip [q]uit: ").strip().lower()
+        command = (
+            _prompt(stdin, stdout, "Action [a]ccept [e]dit [r]eject [s]kip [q]uit: ")
+            .strip()
+            .lower()
+        )
         if command in {"q", "quit"}:
             stopped_reason = "quit"
             break
@@ -363,7 +370,9 @@ def _row_to_reviewed_query(
 
     if review_status not in FINAL_REVIEW_STATUSES:
         allowed = ", ".join(sorted(FINAL_REVIEW_STATUSES))
-        raise ValueError(f"Row {query_id} has invalid review_status {review_status!r}; expected one of {allowed}")
+        raise ValueError(
+            f"Row {query_id} has invalid review_status {review_status!r}; expected one of {allowed}"
+        )
     if review_status == "reject":
         return None
     if review_status == "accept":

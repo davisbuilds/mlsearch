@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 RESULTS_HEADER = "timestamp\tmodel_ref\trecall@10\tmrr\tndcg@10\tstatus\tdescription\n"
@@ -21,7 +21,7 @@ def append_result(
     description: str,
 ) -> None:
     ensure_results_file(path)
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     row = "\t".join(
         [
             timestamp,

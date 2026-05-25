@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from itertools import product
 from pathlib import Path
 
@@ -179,7 +179,8 @@ def _resolve_reference_metrics(
     reference_report = run_model_eval(model_ref=reference_model)
     if Path(reference_report.candidates_path) != baseline_candidates_path:
         raise ValueError(
-            "Reference model targets a different benchmark split; rerun `eval baseline` before starting the sweep."
+            "Reference model targets a different benchmark split; rerun "
+            "`eval baseline` before starting the sweep."
         )
     return reference_report.model_ref, reference_report.metrics
 
@@ -198,7 +199,7 @@ def _render_description(config: TrainConfig, reference_model_ref: str) -> str:
 
 def _write_sweep_report(payload: dict[str, object]) -> Path:
     PATHS.artifacts_results.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     report_path = PATHS.artifacts_results / f"sweep-{timestamp}.json"
     report_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     return report_path

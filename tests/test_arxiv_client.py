@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from mlsearch.data.arxiv_client import build_search_query, parse_feed
 
-
 SAMPLE_FEED = """<?xml version='1.0' encoding='UTF-8'?>
 <feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
   <opensearch:totalResults>2</opensearch:totalResults>

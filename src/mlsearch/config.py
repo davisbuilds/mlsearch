@@ -44,16 +44,6 @@ class TrainConfig:
     run_name_prefix: str = "retriever"
 
 
-@dataclass(frozen=True)
-class RuntimeConfig:
-    corpus: CorpusConfig = CorpusConfig()
-    benchmark: BenchmarkConfig = BenchmarkConfig()
-    train: TrainConfig = TrainConfig()
-
-
-RUNTIME_CONFIG = RuntimeConfig()
-
-
 def load_yaml(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}

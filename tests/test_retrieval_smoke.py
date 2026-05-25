@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from mlsearch.data.models import ArxivPaper
-from mlsearch.retrieval.search import SearchHit, rank_hits, search_index
+from mlsearch.retrieval.search import rank_hits, search_index
 
 
 def _paper(arxiv_id: str, title: str) -> ArxivPaper:

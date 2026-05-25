@@ -21,7 +21,7 @@ class ProjectPaths:
     plans: Path
 
     @classmethod
-    def discover(cls) -> "ProjectPaths":
+    def discover(cls) -> ProjectPaths:
         root = Path(__file__).resolve().parents[2]
         return cls(
             root=root,

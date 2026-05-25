@@ -7,13 +7,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mlsearch.benchmark.review import load_reviewed_queries, write_review_csv
+from mlsearch.benchmark.schema import QueryCandidate
 from mlsearch.benchmark.splits import (
     DEFAULT_REVIEW_SPLIT,
     all_held_out_eval_paths,
     all_review_sample_paths,
     review_sample_path,
 )
-from mlsearch.benchmark.schema import QueryCandidate
 from mlsearch.config import load_benchmark_config
 from mlsearch.paths import PATHS
 from mlsearch.pipelines.generate_queries import load_query_candidates
@@ -46,7 +46,9 @@ def sample_review_set(
         if candidate.query_id not in excluded_query_ids
         and candidate.source_paper_id not in excluded_source_paper_ids
     ]
-    selected = stratified_sample(eligible_candidates, count=min(count, len(eligible_candidates)), seed=config.seed)
+    selected = stratified_sample(
+        eligible_candidates, count=min(count, len(eligible_candidates)), seed=config.seed
+    )
 
     review_path = review_sample_path(split=split)
     write_review_csv(review_path, selected)
@@ -63,7 +65,9 @@ def sample_review_set(
     )
 
 
-def stratified_sample(candidates: list[QueryCandidate], *, count: int, seed: int) -> list[QueryCandidate]:
+def stratified_sample(
+    candidates: list[QueryCandidate], *, count: int, seed: int
+) -> list[QueryCandidate]:
     grouped: dict[str, list[QueryCandidate]] = defaultdict(list)
     for candidate in candidates:
         grouped[candidate.style].append(candidate)
@@ -111,7 +115,9 @@ def load_reviewed_source_paper_ids() -> set[str]:
 
     for held_out_path in all_held_out_eval_paths():
         if held_out_path.exists():
-            reviewed_paper_ids.update(query.source_paper_id for query in load_reviewed_queries(held_out_path))
+            reviewed_paper_ids.update(
+                query.source_paper_id for query in load_reviewed_queries(held_out_path)
+            )
 
     archive_dir = PATHS.data_benchmark / "reviewed" / "archive"
     if archive_dir.exists():

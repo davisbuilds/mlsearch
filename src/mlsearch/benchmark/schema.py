@@ -22,7 +22,7 @@ class QueryCandidate:
         return payload
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "QueryCandidate":
+    def from_dict(cls, data: dict[str, Any]) -> QueryCandidate:
         return cls(
             query_id=data["query_id"],
             query_text=data["query_text"],
@@ -53,7 +53,7 @@ class ReviewedQuery:
         return payload
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ReviewedQuery":
+    def from_dict(cls, data: dict[str, Any]) -> ReviewedQuery:
         return cls(
             query_id=data["query_id"],
             query_text=data["query_text"],

@@ -24,11 +24,24 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "pytest==9.0.2",
+    "ruff==0.15.12",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W", "C4", "SIM", "ERA", "RUF", "PIE"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test fixtures embed long realistic data (arXiv XML feeds, paper titles, query
+# strings) that must stay byte-accurate; wrapping them would corrupt the fixture.
+"tests/**" = ["E501"]
 
 [tool.uv]
 default-groups = ["dev"]

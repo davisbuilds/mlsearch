@@ -18,7 +18,9 @@ class CorpusValidationReport:
     errors: list[str]
 
 
-def validate_corpus(*, config_path: Path, corpus_path: Path | None = None) -> CorpusValidationReport:
+def validate_corpus(
+    *, config_path: Path, corpus_path: Path | None = None
+) -> CorpusValidationReport:
     config = load_corpus_config(config_path)
     resolved_path = corpus_path or (PATHS.data_processed / "corpus.jsonl")
     papers = load_corpus(resolved_path)

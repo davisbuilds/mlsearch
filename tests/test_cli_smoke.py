@@ -47,7 +47,9 @@ def test_search_parser_accepts_rerank_arguments() -> None:
 
 def test_benchmark_finalize_review_parser_accepts_input_override() -> None:
     parser = cli._build_parser()
-    args = parser.parse_args(["benchmark", "finalize-review", "--input", "data/benchmark/reviewed/review_sample.csv"])
+    args = parser.parse_args(
+        ["benchmark", "finalize-review", "--input", "data/benchmark/reviewed/review_sample.csv"]
+    )
     assert args.command == "benchmark"
     assert args.benchmark_command == "finalize-review"
     assert args.input == "data/benchmark/reviewed/review_sample.csv"
@@ -63,7 +65,9 @@ def test_benchmark_finalize_review_parser_accepts_split() -> None:
 
 def test_benchmark_review_stats_parser_accepts_input_override() -> None:
     parser = cli._build_parser()
-    args = parser.parse_args(["benchmark", "review-stats", "--input", "data/benchmark/reviewed/review_sample.csv"])
+    args = parser.parse_args(
+        ["benchmark", "review-stats", "--input", "data/benchmark/reviewed/review_sample.csv"]
+    )
     assert args.command == "benchmark"
     assert args.benchmark_command == "review-stats"
     assert args.input == "data/benchmark/reviewed/review_sample.csv"
@@ -126,7 +130,9 @@ def test_benchmark_archive_reviewed_parser_accepts_label() -> None:
 
 def test_benchmark_diagnostics_parser_accepts_input_override() -> None:
     parser = cli._build_parser()
-    args = parser.parse_args(["benchmark", "diagnostics", "--input", "data/benchmark/generated/query_candidates.jsonl"])
+    args = parser.parse_args(
+        ["benchmark", "diagnostics", "--input", "data/benchmark/generated/query_candidates.jsonl"]
+    )
     assert args.command == "benchmark"
     assert args.benchmark_command == "diagnostics"
     assert args.input == "data/benchmark/generated/query_candidates.jsonl"

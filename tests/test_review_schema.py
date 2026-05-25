@@ -87,7 +87,10 @@ def test_finalize_review_csv_materializes_only_accepted_queries(tmp_path: Path) 
     assert report.accepted_count == 2
     assert report.rejected_count == 1
     assert output_path.exists()
-    payloads = [ReviewedQuery.from_dict(json.loads(line)) for line in output_path.read_text(encoding="utf-8").splitlines()]
+    payloads = [
+        ReviewedQuery.from_dict(json.loads(line))
+        for line in output_path.read_text(encoding="utf-8").splitlines()
+    ]
     assert [item.query_id for item in payloads] == ["paper-1-question", "paper-2-keyword"]
     assert payloads[0].query_text == "what papers study few-shot classification?"
     assert payloads[0].relevant_paper_ids == ("paper-1",)

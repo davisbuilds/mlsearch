@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import shutil
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from mlsearch.paths import PATHS
@@ -14,9 +14,11 @@ class ArchiveReviewArtifactsReport:
     copied_files: list[str]
 
 
-def archive_review_artifacts(*, reviewed_dir: Path | None = None, label: str | None = None) -> ArchiveReviewArtifactsReport:
+def archive_review_artifacts(
+    *, reviewed_dir: Path | None = None, label: str | None = None
+) -> ArchiveReviewArtifactsReport:
     source_dir = reviewed_dir or (PATHS.data_benchmark / "reviewed")
-    archive_label = label or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    archive_label = label or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     archive_dir = source_dir / "archive" / archive_label
     archive_dir.mkdir(parents=True, exist_ok=True)
 

@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from mlsearch.benchmark.review import load_reviewed_queries
-from mlsearch.benchmark.splits import DEFAULT_REVIEW_SPLIT, held_out_eval_path
 from mlsearch.benchmark.schema import QueryCandidate, ReviewedQuery
+from mlsearch.benchmark.splits import DEFAULT_REVIEW_SPLIT, held_out_eval_path
+from mlsearch.eval.metrics import ndcg_at_k, recall_at_k, reciprocal_rank
 from mlsearch.experiments.compare import compare_metric_sets
 from mlsearch.experiments.logging import append_result
-from mlsearch.eval.metrics import ndcg_at_k, recall_at_k, reciprocal_rank
 from mlsearch.paths import PATHS
 from mlsearch.pipelines.generate_queries import load_query_candidates
 from mlsearch.retrieval.index import build_index
@@ -46,7 +46,8 @@ def run_baseline_eval(
     split: str = DEFAULT_REVIEW_SPLIT,
 ) -> BaselineEvalReport:
     selected_candidates_path, candidates = resolve_eval_candidates(
-        generated_candidates_path=candidates_path or (PATHS.data_benchmark / "generated" / "query_candidates.jsonl"),
+        generated_candidates_path=candidates_path
+        or (PATHS.data_benchmark / "generated" / "query_candidates.jsonl"),
         reviewed_eval_path=held_out_eval_path(split=split),
     )
     metrics, report_path = _run_eval(
@@ -75,7 +76,8 @@ def run_baseline_rerank_eval(
     split: str = DEFAULT_REVIEW_SPLIT,
 ) -> BaselineEvalReport:
     selected_candidates_path, candidates = resolve_eval_candidates(
-        generated_candidates_path=candidates_path or (PATHS.data_benchmark / "generated" / "query_candidates.jsonl"),
+        generated_candidates_path=candidates_path
+        or (PATHS.data_benchmark / "generated" / "query_candidates.jsonl"),
         reviewed_eval_path=held_out_eval_path(split=split),
     )
     metrics, report_path = _run_eval(
@@ -96,7 +98,9 @@ def run_baseline_rerank_eval(
     )
 
 
-def run_model_eval(*, model_ref: str | Path, top_k: int = 10, split: str = DEFAULT_REVIEW_SPLIT) -> ModelEvalReport:
+def run_model_eval(
+    *, model_ref: str | Path, top_k: int = 10, split: str = DEFAULT_REVIEW_SPLIT
+) -> ModelEvalReport:
     return _run_checkpoint_eval(
         model_ref=model_ref,
         top_k=top_k,
@@ -124,10 +128,16 @@ def run_rerank_experiment(
         split=split,
     )
     reference_name, reference_report = load_reference_report(reference_model_ref, top_k=top_k)
-    ensure_report_compatible(reference_report, candidates_path=Path(candidate_report.candidates_path), report_label=reference_name)
+    ensure_report_compatible(
+        reference_report,
+        candidates_path=Path(candidate_report.candidates_path),
+        report_label=reference_name,
+    )
     reference_metrics = reference_report["metrics"]
     comparison = compare_metric_sets(candidate_report.metrics, reference_metrics)
-    candidate_report_payload = json.loads(Path(candidate_report.report_path).read_text(encoding="utf-8"))
+    candidate_report_payload = json.loads(
+        Path(candidate_report.report_path).read_text(encoding="utf-8")
+    )
     query_deltas = build_query_delta_report(
         baseline_queries=list(reference_report.get("per_query", [])),
         candidate_queries=list(candidate_report_payload.get("per_query", [])),
@@ -208,13 +218,17 @@ def _run_checkpoint_eval(
     )
 
 
-def run_compare_eval(*, model_ref: str, record_results: bool, split: str = DEFAULT_REVIEW_SPLIT) -> dict[str, object]:
+def run_compare_eval(
+    *, model_ref: str, record_results: bool, split: str = DEFAULT_REVIEW_SPLIT
+) -> dict[str, object]:
     model_report = run_model_eval(model_ref=model_ref, top_k=10, split=split)
     baseline_report = load_latest_report("baseline")
     ensure_baseline_compatible(baseline_report, candidates_path=Path(model_report.candidates_path))
     baseline_metrics = baseline_report["metrics"]
     comparison = compare_metric_sets(model_report.metrics, baseline_metrics)
-    candidate_report_payload = json.loads(Path(model_report.report_path).read_text(encoding="utf-8"))
+    candidate_report_payload = json.loads(
+        Path(model_report.report_path).read_text(encoding="utf-8")
+    )
     query_deltas = build_query_delta_report(
         baseline_queries=list(baseline_report.get("per_query", [])),
         candidate_queries=list(candidate_report_payload.get("per_query", [])),
@@ -250,7 +264,9 @@ def run_compare_eval(*, model_ref: str, record_results: bool, split: str = DEFAU
     return payload
 
 
-def aggregate_metrics(candidates: list[QueryCandidate | ReviewedQuery], hits_per_query, *, top_k: int) -> dict[str, float]:
+def aggregate_metrics(
+    candidates: list[QueryCandidate | ReviewedQuery], hits_per_query, *, top_k: int
+) -> dict[str, float]:
     recall = 0.0
     mrr = 0.0
     ndcg = 0.0
@@ -324,7 +340,7 @@ def _run_eval(
     metrics = aggregate_metrics(candidates, hits_per_query, top_k=top_k)
     query_breakdowns = build_query_breakdowns(candidates, hits_per_query, top_k=top_k)
     output_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     report_path = output_dir / f"{report_prefix}-{timestamp}.json"
     report_path.write_text(
         json.dumps(
@@ -344,11 +360,6 @@ def _run_eval(
         encoding="utf-8",
     )
     return metrics, report_path
-
-
-def load_latest_metrics(prefix: str) -> dict[str, float]:
-    payload = load_latest_report(prefix)
-    return payload["metrics"]
 
 
 def load_latest_report(prefix: str) -> dict[str, object]:
@@ -376,13 +387,18 @@ def _relevant_ids(candidate: QueryCandidate | ReviewedQuery) -> tuple[str, ...]:
     return candidate.positive_ids
 
 
-def ensure_baseline_compatible(baseline_report: dict[str, object], *, candidates_path: Path) -> None:
+def ensure_baseline_compatible(
+    baseline_report: dict[str, object], *, candidates_path: Path
+) -> None:
     baseline_candidates_path = baseline_report.get("candidates_path")
     if baseline_candidates_path is None:
-        raise ValueError("Latest baseline report is missing candidates_path; rerun `eval baseline`.")
+        raise ValueError(
+            "Latest baseline report is missing candidates_path; rerun `eval baseline`."
+        )
     if Path(str(baseline_candidates_path)) != candidates_path:
         raise ValueError(
-            "Latest baseline report targets a different benchmark split; rerun `eval baseline` before compare."
+            "Latest baseline report targets a different benchmark split; rerun "
+            "`eval baseline` before compare."
         )
 
 
@@ -394,10 +410,13 @@ def ensure_report_compatible(
 ) -> None:
     report_candidates_path = report_payload.get("candidates_path")
     if report_candidates_path is None:
-        raise ValueError(f"{report_label} report is missing candidates_path; rerun the reference evaluation.")
+        raise ValueError(
+            f"{report_label} report is missing candidates_path; rerun the reference evaluation."
+        )
     if Path(str(report_candidates_path)) != candidates_path:
         raise ValueError(
-            f"{report_label} report targets a different benchmark split; rerun the reference evaluation first."
+            f"{report_label} report targets a different benchmark split; rerun "
+            "the reference evaluation first."
         )
 
 
@@ -425,12 +444,14 @@ def build_query_delta_report(
                 "delta_relevant_rank": _delta_rank(baseline_rank, candidate_rank),
                 "baseline_reciprocal_rank": baseline_item["reciprocal_rank"],
                 "candidate_reciprocal_rank": candidate_item["reciprocal_rank"],
-                "delta_reciprocal_rank": candidate_item["reciprocal_rank"] - baseline_item["reciprocal_rank"],
+                "delta_reciprocal_rank": candidate_item["reciprocal_rank"]
+                - baseline_item["reciprocal_rank"],
                 "baseline_top_hit_arxiv_id": baseline_item.get("top_hit_arxiv_id"),
                 "candidate_top_hit_arxiv_id": candidate_item.get("top_hit_arxiv_id"),
                 "baseline_top_hit_title": baseline_item.get("top_hit_title"),
                 "candidate_top_hit_title": candidate_item.get("top_hit_title"),
-                "top_hit_changed": baseline_item.get("top_hit_arxiv_id") != candidate_item.get("top_hit_arxiv_id"),
+                "top_hit_changed": baseline_item.get("top_hit_arxiv_id")
+                != candidate_item.get("top_hit_arxiv_id"),
             }
         )
     return sorted(

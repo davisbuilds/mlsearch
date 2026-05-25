@@ -10,7 +10,9 @@ def test_archive_review_artifacts_copies_existing_review_files(tmp_path: Path) -
     reviewed_dir.mkdir()
     (reviewed_dir / "review_sample.csv").write_text("query_id\npaper-1\n", encoding="utf-8")
     (reviewed_dir / "held_out_eval.jsonl").write_text('{"query_id":"paper-1"}\n', encoding="utf-8")
-    (reviewed_dir / "held_out_eval_manifest.json").write_text('{"accepted_count":1}\n', encoding="utf-8")
+    (reviewed_dir / "held_out_eval_manifest.json").write_text(
+        '{"accepted_count":1}\n', encoding="utf-8"
+    )
 
     report = archive_review_artifacts(reviewed_dir=reviewed_dir, label="pre-hardening")
 

@@ -154,7 +154,9 @@ class QueryGenerationReport:
     styles: dict[str, int]
 
 
-def generate_queries(*, config_path: Path, corpus_path: Path | None = None) -> QueryGenerationReport:
+def generate_queries(
+    *, config_path: Path, corpus_path: Path | None = None
+) -> QueryGenerationReport:
     config = load_benchmark_config(config_path)
     papers = load_corpus(corpus_path or (PATHS.data_processed / "corpus.jsonl"))
     candidates = build_query_candidates(papers, config)
@@ -207,7 +209,9 @@ def write_query_candidates(
     )
 
 
-def build_query_candidates(papers: list[ArxivPaper], config: BenchmarkConfig) -> list[QueryCandidate]:
+def build_query_candidates(
+    papers: list[ArxivPaper], config: BenchmarkConfig
+) -> list[QueryCandidate]:
     sampled_papers = select_source_papers(papers, config.max_candidates, config.seed)
     title_tokens = {paper.arxiv_id: keyword_tokens(paper.title) for paper in papers}
     token_index = build_token_index(title_tokens)
@@ -257,7 +261,9 @@ def load_query_candidates(path: Path) -> list[QueryCandidate]:
         return [QueryCandidate.from_dict(json.loads(line)) for line in handle]
 
 
-def select_source_papers(papers: list[ArxivPaper], max_candidates: int, seed: int) -> list[ArxivPaper]:
+def select_source_papers(
+    papers: list[ArxivPaper], max_candidates: int, seed: int
+) -> list[ArxivPaper]:
     if len(papers) <= max_candidates:
         return list(papers)
     rng = random.Random(seed)
@@ -356,11 +362,6 @@ def descriptive_title_tokens(title: str) -> list[str]:
     return trim_title_lead_noise(ordered_keyword_tokens(title))
 
 
-def normalize_title_topic(title: str) -> str:
-    topic = re.sub(r"[^a-z0-9\s-]", "", title.lower()).strip()
-    return " ".join(topic.split())
-
-
 def clean_abstract_topic(abstract: str) -> str:
     sentence = first_sentence(abstract)
     lowered = sentence.lower().strip()
@@ -426,7 +427,7 @@ def select_salient_ngram(abstract_tokens: list[str], title_token_set: set[str]) 
     best_tokens: list[str] = []
     best_score = float("-inf")
     for width in range(2, min(4, len(abstract_tokens)) + 1):
-        for start in range(0, len(abstract_tokens) - width + 1):
+        for start in range(len(abstract_tokens) - width + 1):
             tokens = abstract_tokens[start : start + width]
             novelty = sum(1 for token in tokens if token not in title_token_set)
             title_overlap = width - novelty
@@ -439,7 +440,9 @@ def select_salient_ngram(abstract_tokens: list[str], title_token_set: set[str]) 
     return best_tokens or abstract_tokens[:3]
 
 
-def build_abstract_query_tokens(*, title_tokens: list[str], abstract_tokens: list[str]) -> list[str]:
+def build_abstract_query_tokens(
+    *, title_tokens: list[str], abstract_tokens: list[str]
+) -> list[str]:
     salient_tokens = select_salient_ngram(abstract_tokens, set(title_tokens))
     context_tokens = select_context_tokens(
         salient_tokens=salient_tokens,
@@ -456,7 +459,9 @@ def build_title_query_tokens(title_tokens: list[str]) -> list[str]:
     if not title_tokens:
         return []
 
-    connector_index = next((index for index, token in enumerate(title_tokens) if token in TITLE_CONNECTORS), -1)
+    connector_index = next(
+        (index for index, token in enumerate(title_tokens) if token in TITLE_CONNECTORS), -1
+    )
     if connector_index == -1:
         return trim_title_tail_noise(trim_title_lead_noise(title_tokens))[:5]
 
@@ -465,8 +470,12 @@ def build_title_query_tokens(title_tokens: list[str]) -> list[str]:
     connector = title_tokens[connector_index]
 
     if connector == "for":
-        if left and left[-1] in {"framework", "frameworks", "tool", "tools", "system", "systems"} and right:
-            return dedupe_tokens(right[:4] + [left[-1]])
+        if (
+            left
+            and left[-1] in {"framework", "frameworks", "tool", "tools", "system", "systems"}
+            and right
+        ):
+            return dedupe_tokens([*right[:4], left[-1]])
         if right:
             return dedupe_tokens(right[:4] + left[-2:])
     if connector in {"using", "via", "with"}:
@@ -474,9 +483,8 @@ def build_title_query_tokens(title_tokens: list[str]) -> list[str]:
             return dedupe_tokens(left[:2] + right[:3])
         if left:
             return left[:5]
-    if connector == "in":
-        if left and right:
-            return dedupe_tokens(left[:4] + right[:2])
+    if connector == "in" and left and right:
+        return dedupe_tokens(left[:4] + right[:2])
 
     return trim_title_tail_noise((left + right)[:5])
 
@@ -528,17 +536,11 @@ def select_context_tokens(
     salient_set = set(salient_tokens)
     abstract_set = set(abstract_tokens)
     title_context = [
-        token
-        for token in title_tokens
-        if token in abstract_set and token not in salient_set
+        token for token in title_tokens if token in abstract_set and token not in salient_set
     ]
     if len(title_context) >= 2:
         return title_context[-2:]
-    fallback_context = [
-        token
-        for token in abstract_tokens
-        if token not in salient_set
-    ]
+    fallback_context = [token for token in abstract_tokens if token not in salient_set]
     if title_context:
         return dedupe_tokens(fallback_context + title_context)[:2]
     return fallback_context[:2]
@@ -565,7 +567,9 @@ def dedupe_tokens(tokens: list[str]) -> list[str]:
 def compute_query_diagnostics(candidates: list[QueryCandidate]) -> dict[str, object]:
     by_style: dict[str, list[float]] = defaultdict(list)
     for candidate in candidates:
-        by_style[candidate.style].append(title_overlap_ratio(candidate.query_text, candidate.source_title))
+        by_style[candidate.style].append(
+            title_overlap_ratio(candidate.query_text, candidate.source_title)
+        )
 
     style_overlap: dict[str, dict[str, float | int]] = {}
     for style, overlaps in sorted(by_style.items()):

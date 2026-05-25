@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from mlsearch.paths import PATHS
 from mlsearch.pipelines.archive_review_artifacts import archive_review_artifacts
 from mlsearch.pipelines.build_corpus import build_corpus
 from mlsearch.pipelines.finalize_review_set import finalize_review_set
-from mlsearch.pipelines.generate_queries import compute_query_diagnostics, generate_queries, load_query_candidates
+from mlsearch.pipelines.generate_queries import (
+    compute_query_diagnostics,
+    generate_queries,
+    load_query_candidates,
+)
 from mlsearch.pipelines.review_workflow import review_loop, review_next, review_stats
 from mlsearch.pipelines.sample_review_set import sample_review_set
 from mlsearch.pipelines.validate_corpus import validate_corpus
@@ -54,28 +58,43 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
 
     review = nested.add_parser("sample-review", help="Sample queries for manual review.")
     review.add_argument("--count", type=int, default=30, help="Review sample size.")
-    review.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to sample into.")
+    review.add_argument(
+        "--split", choices=("dev", "test"), default="dev", help="Reviewed split to sample into."
+    )
     review.add_argument(
         "--include-reviewed",
         action="store_true",
-        help="Allow queries that already appear in archived review batches or the current held-out eval.",
+        help=(
+            "Allow queries that already appear in archived review batches or the "
+            "current held-out eval."
+        ),
     )
     review.set_defaults(handler=_handle_benchmark_sample_review)
 
-    finalize = nested.add_parser("finalize-review", help="Finalize the reviewed held-out eval split.")
+    finalize = nested.add_parser(
+        "finalize-review", help="Finalize the reviewed held-out eval split."
+    )
     finalize.add_argument(
         "--input",
         default=str(PATHS.data_benchmark / "reviewed" / "review_sample.csv"),
         help="Reviewed CSV to import into the held-out eval split.",
     )
-    finalize.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to finalize into.")
+    finalize.add_argument(
+        "--split", choices=("dev", "test"), default="dev", help="Reviewed split to finalize into."
+    )
     finalize.set_defaults(handler=_handle_benchmark_finalize_review)
 
-    archive = nested.add_parser("archive-reviewed", help="Archive the current review artifacts under a label.")
-    archive.add_argument("--label", default=None, help="Archive label. Defaults to a UTC timestamp.")
+    archive = nested.add_parser(
+        "archive-reviewed", help="Archive the current review artifacts under a label."
+    )
+    archive.add_argument(
+        "--label", default=None, help="Archive label. Defaults to a UTC timestamp."
+    )
     archive.set_defaults(handler=_handle_benchmark_archive_reviewed)
 
-    diagnostics = nested.add_parser("diagnostics", help="Summarize overlap diagnostics for generated benchmark queries.")
+    diagnostics = nested.add_parser(
+        "diagnostics", help="Summarize overlap diagnostics for generated benchmark queries."
+    )
     diagnostics.add_argument(
         "--input",
         default=str(PATHS.data_benchmark / "generated" / "query_candidates.jsonl"),
@@ -89,10 +108,14 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
         default=str(PATHS.data_benchmark / "reviewed" / "review_sample.csv"),
         help="Reviewed CSV to summarize.",
     )
-    stats.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to inspect.")
+    stats.add_argument(
+        "--split", choices=("dev", "test"), default="dev", help="Reviewed split to inspect."
+    )
     stats.set_defaults(handler=_handle_benchmark_review_stats)
 
-    next_item = nested.add_parser("review-next", help="Show the next pending review row with source-paper context.")
+    next_item = nested.add_parser(
+        "review-next", help="Show the next pending review row with source-paper context."
+    )
     next_item.add_argument(
         "--input",
         default=str(PATHS.data_benchmark / "reviewed" / "review_sample.csv"),
@@ -103,7 +126,9 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
         default=None,
         help="Inspect a specific query id instead of the next pending row.",
     )
-    next_item.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to inspect.")
+    next_item.add_argument(
+        "--split", choices=("dev", "test"), default="dev", help="Reviewed split to inspect."
+    )
     next_item.set_defaults(handler=_handle_benchmark_review_next)
 
     review_loop_parser = nested.add_parser(
@@ -126,7 +151,9 @@ def _add_benchmark_parser(subparsers: argparse._SubParsersAction[argparse.Argume
         default=None,
         help="Maximum number of rows to process before exiting.",
     )
-    review_loop_parser.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to edit.")
+    review_loop_parser.add_argument(
+        "--split", choices=("dev", "test"), default="dev", help="Reviewed split to edit."
+    )
     review_loop_parser.set_defaults(handler=_handle_benchmark_review_loop)
 
 
@@ -148,10 +175,14 @@ def _add_eval_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
     nested = parser.add_subparsers(dest="eval_command", required=True)
 
     baseline = nested.add_parser("baseline", help="Run the zero-shot baseline evaluation.")
-    baseline.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to evaluate.")
+    baseline.add_argument(
+        "--split", choices=("dev", "test"), default="dev", help="Reviewed split to evaluate."
+    )
     baseline.set_defaults(handler=_handle_eval_baseline)
 
-    baseline_rerank = nested.add_parser("baseline-rerank", help="Run baseline retrieval plus second-stage reranking.")
+    baseline_rerank = nested.add_parser(
+        "baseline-rerank", help="Run baseline retrieval plus second-stage reranking."
+    )
     baseline_rerank.add_argument(
         "--reranker-model",
         default="cross-encoder/ms-marco-MiniLM-L-6-v2",
@@ -163,13 +194,19 @@ def _add_eval_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
         default=10,
         help="How many retrieved papers to rerank per query.",
     )
-    baseline_rerank.add_argument("--top-k", type=int, default=10, help="Eval cutoff after reranking.")
-    baseline_rerank.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to evaluate.")
+    baseline_rerank.add_argument(
+        "--top-k", type=int, default=10, help="Eval cutoff after reranking."
+    )
+    baseline_rerank.add_argument(
+        "--split", choices=("dev", "test"), default="dev", help="Reviewed split to evaluate."
+    )
     baseline_rerank.set_defaults(handler=_handle_eval_baseline_rerank)
 
     compare = nested.add_parser("compare", help="Compare a trained model to baseline.")
     compare.add_argument("--model", default="latest", help="Model checkpoint alias.")
-    compare.add_argument("--split", choices=("dev", "test"), default="dev", help="Reviewed split to evaluate.")
+    compare.add_argument(
+        "--split", choices=("dev", "test"), default="dev", help="Reviewed split to evaluate."
+    )
     compare.add_argument(
         "--record-results",
         action="store_true",
@@ -188,14 +225,18 @@ def _add_experiment_parser(subparsers: argparse._SubParsersAction[argparse.Argum
     parser = subparsers.add_parser("experiment", help="Run constrained local autoresearch loops.")
     nested = parser.add_subparsers(dest="experiment_command", required=True)
 
-    sweep = nested.add_parser("sweep", help="Sweep safe training hyperparameters against the reviewed eval split.")
+    sweep = nested.add_parser(
+        "sweep", help="Sweep safe training hyperparameters against the reviewed eval split."
+    )
     sweep.add_argument("--config", default="configs/train.yaml", help="Base training config path.")
     sweep.add_argument(
         "--reference-model",
         default="baseline",
         help="Starting champion for the sweep: baseline, latest, or a model checkpoint name.",
     )
-    sweep.add_argument("--learning-rate", dest="learning_rates", type=float, nargs="+", default=None)
+    sweep.add_argument(
+        "--learning-rate", dest="learning_rates", type=float, nargs="+", default=None
+    )
     sweep.add_argument("--num-epochs", dest="num_epochs", type=int, nargs="+", default=None)
     sweep.add_argument("--batch-size", dest="batch_sizes", type=int, nargs="+", default=None)
     sweep.add_argument("--max-examples", dest="max_examples", type=int, nargs="+", default=None)
@@ -207,8 +248,14 @@ def _add_experiment_parser(subparsers: argparse._SubParsersAction[argparse.Argum
     )
     sweep.set_defaults(handler=_handle_experiment_sweep)
 
-    rerank = nested.add_parser("rerank", help="Run a second-stage reranking experiment on the reviewed eval split.")
-    rerank.add_argument("--retriever-model", default="latest", help="Retriever checkpoint alias for first-stage recall.")
+    rerank = nested.add_parser(
+        "rerank", help="Run a second-stage reranking experiment on the reviewed eval split."
+    )
+    rerank.add_argument(
+        "--retriever-model",
+        default="latest",
+        help="Retriever checkpoint alias for first-stage recall.",
+    )
     rerank.add_argument(
         "--reference-model",
         default="latest",
@@ -219,7 +266,12 @@ def _add_experiment_parser(subparsers: argparse._SubParsersAction[argparse.Argum
         default="cross-encoder/ms-marco-MiniLM-L-6-v2",
         help="Cross-encoder model name or local path.",
     )
-    rerank.add_argument("--rerank-depth", type=int, default=10, help="How many retrieved papers to rerank per query.")
+    rerank.add_argument(
+        "--rerank-depth",
+        type=int,
+        default=10,
+        help="How many retrieved papers to rerank per query.",
+    )
     rerank.add_argument("--top-k", type=int, default=10, help="Eval cutoff after reranking.")
     rerank.add_argument(
         "--record-results",
@@ -347,7 +399,9 @@ def _handle_benchmark_review_next(args: argparse.Namespace) -> int:
 def _handle_benchmark_review_loop(args: argparse.Namespace) -> int:
     review_path = _resolve_review_input_path(args.input, split=args.split)
     try:
-        report = review_loop(review_path=review_path, query_id=args.query_id, limit=args.limit, split=args.split)
+        report = review_loop(
+            review_path=review_path, query_id=args.query_id, limit=args.limit, split=args.split
+        )
     except ValueError as exc:
         raise SystemExit(f"Interactive review failed: {exc}") from exc
     print(json.dumps(report.__dict__, indent=2, sort_keys=True))
@@ -392,7 +446,9 @@ def _handle_eval_baseline_rerank(args: argparse.Namespace) -> int:
 def _handle_eval_compare(args: argparse.Namespace) -> int:
     from mlsearch.eval.run_eval import run_compare_eval
 
-    report = run_compare_eval(model_ref=args.model, record_results=args.record_results, split=args.split)
+    report = run_compare_eval(
+        model_ref=args.model, record_results=args.record_results, split=args.split
+    )
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 
@@ -457,7 +513,7 @@ def _handle_search(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
-    handler = getattr(args, "handler")
+    handler = args.handler
     return handler(args)
 
 

@@ -73,7 +73,9 @@ def test_build_query_candidates_uses_abstract_signal_to_reduce_title_copy() -> N
         pdf_url=None,
     )
 
-    candidates = build_query_candidates([paper], BenchmarkConfig(max_candidates=10, negatives_per_query=1))
+    candidates = build_query_candidates(
+        [paper], BenchmarkConfig(max_candidates=10, negatives_per_query=1)
+    )
     keyword = next(candidate for candidate in candidates if candidate.style == "keyword")
     question = next(candidate for candidate in candidates if candidate.style == "question")
 
@@ -101,7 +103,9 @@ def test_build_query_candidates_prefers_title_topics_over_abstract_intro_debris(
         pdf_url=None,
     )
 
-    candidates = build_query_candidates([paper], BenchmarkConfig(max_candidates=10, negatives_per_query=1))
+    candidates = build_query_candidates(
+        [paper], BenchmarkConfig(max_candidates=10, negatives_per_query=1)
+    )
     keyword = next(candidate for candidate in candidates if candidate.style == "keyword")
     question = next(candidate for candidate in candidates if candidate.style == "question")
 
@@ -155,7 +159,9 @@ def test_write_query_candidates_writes_diagnostics_to_manifest(tmp_path: Path) -
         abs_url="https://arxiv.org/abs/1",
         pdf_url=None,
     )
-    candidates = build_query_candidates([paper], BenchmarkConfig(max_candidates=1, negatives_per_query=1))
+    candidates = build_query_candidates(
+        [paper], BenchmarkConfig(max_candidates=1, negatives_per_query=1)
+    )
 
     report = write_query_candidates(candidates, generated_dir=tmp_path, seed=42, max_candidates=1)
     manifest = json.loads(Path(report.manifest_path).read_text(encoding="utf-8"))

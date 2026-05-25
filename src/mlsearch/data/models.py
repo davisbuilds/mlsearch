@@ -24,7 +24,7 @@ class ArxivPaper:
         return payload
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ArxivPaper":
+    def from_dict(cls, data: dict[str, Any]) -> ArxivPaper:
         return cls(
             arxiv_id=data["arxiv_id"],
             title=data["title"],
