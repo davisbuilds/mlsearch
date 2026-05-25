@@ -94,6 +94,8 @@ uv run python -m pytest -q
 
 Prefer targeted test slices while iterating, then run the full suite before claiming completion.
 
+**CI runs a lean gate only** (`.github/workflows/ci.yml`): `ruff check`, `ruff format --check`, and the dead-code test — deliberately *no* full pytest suite, so CI never installs `torch`/`sentence-transformers`. The dead-code test runs in an ephemeral env (`uv run --no-project`) with no heavy deps. Consequence: **CI will not catch a failing `pytest` test**, so always run the full suite locally before claiming completion.
+
 For benchmark-affecting changes, rerun the relevant eval commands and report absolute metrics, not just status labels.
 
 - **Ruff** enforces style + small fixups (`E, F, I, B, UP, W, C4, SIM, ERA, RUF, PIE`); `ruff format` keeps formatting consistent. Fix violations the linter flags rather than restating rules here.
