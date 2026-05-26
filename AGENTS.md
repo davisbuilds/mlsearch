@@ -13,9 +13,11 @@ The important invariant is:
 
 ## Documentation Map
 
-- `docs/architecture.md` — project intent, initial layout, design principles.
-- `docs/benchmark.md` — benchmark inputs, generated artifacts, query types, review workflow, split rules.
-- `docs/training.md` — training path, device choice, commands, split discipline, sweep loop, rerank experiment.
+- `docs/system/ARCHITECTURE.md` — project intent, runtime shape, CLI routing, path model, config, data/artifact boundaries, design principles.
+- `docs/system/BENCHMARK.md` — benchmark inputs, generated artifacts, query types, review workflow, split rules, review heuristics.
+- `docs/system/TRAINING.md` — training path, device choice, config, commands, split discipline, sweep loop, rerank experiment.
+- `docs/system/OPERATIONS.md` — local setup, useful commands, lean CI, full local verification, artifact locations, troubleshooting.
+- `docs/plans/` — brainstorms and implementation plans.
 
 Run `uv run mlsearch --help` to list all CLI commands (`corpus`, `benchmark`, `index`, `eval`, `train`, `experiment`, `search`).
 
@@ -105,3 +107,4 @@ For benchmark-affecting changes, rerun the relevant eval commands and report abs
 
 - **Push back before building.** If a request is incoherent or self-contradictory, or a spec/plan is vague or skips key decisions, stop and interview me — ask clarifying questions and confirm intent before writing code or changing files. Don't guess at scope or comply silently. (Clear, well-scoped requests don't need this.)
 - **Keep docs current.** After a significant change, PR, or completed spec/plan, update any now-stale reference docs under `docs/` (`architecture.md`, `benchmark.md`, `training.md`) so they match shipped behavior. Skip this for trivial changes.
+- **Commit logically.** Commit completed work in coherent chunks as you proceed. Push only when explicitly asked.

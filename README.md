@@ -143,6 +143,15 @@ Trustworthy retrieval helpers:
 - `eval baseline-rerank --split test`
 - `search --rerank`
 
+## Documentation
+
+- Agent guidance: [AGENTS.md](AGENTS.md)
+- Architecture: [docs/system/ARCHITECTURE.md](docs/system/ARCHITECTURE.md)
+- Benchmark workflow: [docs/system/BENCHMARK.md](docs/system/BENCHMARK.md)
+- Training and experiments: [docs/system/TRAINING.md](docs/system/TRAINING.md)
+- Operations: [docs/system/OPERATIONS.md](docs/system/OPERATIONS.md)
+- Plans: [docs/plans/](docs/plans/)
+
 ## Constraints
 
 - fully local and cheap
