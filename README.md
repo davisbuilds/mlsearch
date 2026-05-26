@@ -1,8 +1,9 @@
 # MLSearch
 
-MLSearch is a local-first retrieval project for arXiv `cs.LG` papers.
-
-The repo is built around one idea: treat paper search as a benchmarked ML system, not just a demo. The workflow fixes the corpus and evaluation harness, generates mixed-style human search queries, keeps reviewed `dev` and blind `test` eval splits, and judges retrieval changes mechanically on those held-out benchmarks.
+Local-first semantic retrieval project for arXiv `cs.LG` papers. MLSearch treats
+paper search as a benchmarked ML system: fixed corpus, reviewed evaluation
+splits, local embedding/reranking, and mechanical comparison through a results
+ledger.
 
 ## Agent Setup
 
@@ -32,50 +33,44 @@ Don't commit anything.
 
 Prefer to do it yourself? The manual steps are below.
 
-## Current Scope
+## What It Does
 
-The current v1 target is:
+- Builds a reproducible arXiv `cs.LG` corpus for April 1, 2016 through March 31, 2026.
+- Searches paper titles and abstracts with local embeddings.
+- Generates mixed-style synthetic queries for manual review.
+- Maintains reviewed `dev` and blind `test` evaluation splits.
+- Excludes held-out reviewed source papers from training.
+- Supports optional second-stage reranking over retriever shortlists.
+- Records model comparisons through a results ledger.
+- Keeps the workflow CLI-first and local-first.
 
-- a reproducible `cs.LG` corpus covering April 1, 2016 through March 31, 2026
-- paper-level retrieval over title plus abstract
-- synthetic-first query generation with manual review
-- reviewed `dev` and blind `test` evaluation splits
-- local embedding-based indexing and retrieval
-- optional second-stage reranking over the retriever shortlist
-- a CLI-first search and review workflow
+## Quick Start
 
-This is intentionally narrow. There is no full-text PDF/HTML ingestion in v1, and the project is optimized for local iteration on Apple Silicon rather than large-scale training infrastructure.
+Requirements:
 
-## Why This Repo Exists
-
-Most paper-search prototypes stop at “embed some abstracts and query them.” MLSearch is trying to be a little stricter:
-
-- corpus build is deterministic
-- evaluation is explicit and versioned
-- reviewed queries are separated from training data
-- comparisons are mechanical through a results ledger
-- manual review is part of the benchmark, not an afterthought
-
-The current most trustworthy path is:
-
-- zero-shot retriever over `BAAI/bge-small-en-v1.5`
-- second-stage reranker `cross-encoder/ms-marco-MiniLM-L-6-v2`
-- blind validation on the reviewed `test` split
-
-## Install
-
-MLSearch uses `uv` and pinned dependency versions.
+- Python `3.11+`
+- `uv`
+- Apple Silicon is the primary local target
 
 ```bash
 uv sync --group dev
 uv run mlsearch --help
+uv run ruff check .
 ```
 
-## Quickstart
+Tiny corpus smoke path:
 
 ```bash
 uv run mlsearch corpus build --limit 10
 uv run mlsearch corpus validate
+```
+
+For a real run, increase the corpus and review counts after the smoke path works
+locally.
+
+## Common Commands
+
+```bash
 uv run mlsearch benchmark generate
 uv run mlsearch benchmark diagnostics
 uv run mlsearch benchmark sample-review --count 4
@@ -85,63 +80,44 @@ uv run mlsearch benchmark finalize-review
 uv run mlsearch index build
 uv run mlsearch eval baseline
 uv run mlsearch eval baseline-rerank
+uv run mlsearch eval baseline-rerank --split test
 uv run mlsearch search "few-shot classification" --top-k 3
 uv run mlsearch search "few-shot classification" --top-k 3 --rerank
 uv run mlsearch train --config configs/train.yaml
 uv run mlsearch eval compare --model latest --record-results
 uv run mlsearch experiment sweep --reference-model latest --learning-rate 1e-5 2e-5 --num-epochs 1 2 --record-results
 uv run mlsearch experiment rerank --retriever-model latest --reference-model latest --record-results
+
+uv run ruff check .
+uv run ruff format --check .
 ```
 
-For a real run, increase the corpus and review counts after the smoke path is working locally.
+Top-level command groups are `corpus`, `benchmark`, `index`, `eval`,
+`experiment`, `train`, and `search`.
 
 ## Review Workflow
 
-The benchmark review flow is a core part of the project:
+1. Optionally archive current reviewed artifacts with `benchmark archive-reviewed --label <name>`.
+2. Generate candidates with `benchmark generate`.
+3. Inspect overlap with `benchmark diagnostics`.
+4. Export a sample with `benchmark sample-review`; use `--split dev` for tuning and `--split test` for blind validation.
+5. Track progress with `benchmark review-stats`.
+6. Review rows with `benchmark review-loop` or `benchmark review-next`.
+7. Mark each query as `accept`, `edit`, or `reject`.
+8. Finalize with `benchmark finalize-review`.
 
-1. Optionally archive the current reviewed artifacts with `benchmark archive-reviewed --label <name>`.
-2. Generate candidates with `benchmark generate` and inspect overlap with `benchmark diagnostics`.
-3. Export a review sample with `benchmark sample-review`.
-   By default this excludes query ids already present in archived review batches and the current held-out eval. Use `--include-reviewed` only if you intentionally want repeats.
-   Use `--split dev` for the tuning split and `--split test` for the blind split.
-4. Inspect progress with `benchmark review-stats`.
-5. Step through rows with `benchmark review-loop` or inspect one row with `benchmark review-next`.
-6. Mark each query as `accept`, `edit`, or `reject`.
-7. Finalize the reviewed split with `benchmark finalize-review`.
-   This now merges the reviewed batch into the existing split instead of replacing it.
+Reviewed files are the eval source for `eval baseline`, `eval baseline-rerank`,
+and `eval compare`.
 
-The main workflow now supports two reviewed splits:
+## Code Layout
 
-- `dev`: the working benchmark for iteration and autoresearch loops
-- `test`: a blind reviewed benchmark that should stay out of day-to-day tuning
-
-The finalized reviewed files are the eval source for `eval baseline`, `eval baseline-rerank`, and `eval compare`, and all held-out source papers across reviewed splits are excluded from training.
-
-## CLI Surface
-
-Top-level commands:
-
-- `corpus`
-- `benchmark`
-- `index`
-- `eval`
-- `experiment`
-- `train`
-- `search`
-
-Useful review helpers:
-
-- `benchmark archive-reviewed`
-- `benchmark diagnostics`
-- `benchmark review-stats`
-- `benchmark review-next`
-- `benchmark review-loop`
-
-Trustworthy retrieval helpers:
-
-- `eval baseline-rerank`
-- `eval baseline-rerank --split test`
-- `search --rerank`
+```text
+configs/       training and experiment configs
+data/          generated corpus, benchmark, index, and result artifacts
+docs/          system, project, and plan docs
+src/           mlsearch package and CLI
+tests/         pytest suite and fixtures
+```
 
 ## Documentation
 
@@ -152,12 +128,13 @@ Trustworthy retrieval helpers:
 - Operations: [docs/system/OPERATIONS.md](docs/system/OPERATIONS.md)
 - Plans: [docs/plans/](docs/plans/)
 
-## Constraints
+## Current Boundaries
 
-- fully local and cheap
-- Apple Silicon as the primary target
-- no full-text HTML/PDF ingestion in v1
-- CLI-first instead of web-first
+- Fully local and cheap by design.
+- Apple Silicon is the primary target.
+- v1 does not ingest full-text HTML/PDF.
+- CLI-first instead of web-first.
+- Full pytest can pull in heavy ML dependencies; use the documented smoke checks unless broader validation is needed.
 
 ## License
 
