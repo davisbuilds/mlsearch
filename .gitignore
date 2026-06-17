@@ -1,8 +1,10 @@
 .DS_Store
 .pytest_cache/
+.ruff_cache/
 .venv/
 __pycache__/
 *.pyc
+dist/
 data/raw/
 data/processed/
 data/benchmark/generated/
