@@ -12,3 +12,6 @@ artifacts/models/
 artifacts/results/*.json
 artifacts/results/*.jsonl
 artifacts/results/*.tsv
+
+# Local-only archive (completed plans, research, sessions kept out of the public tree)
+**/archive/
