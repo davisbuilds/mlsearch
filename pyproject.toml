@@ -8,23 +8,23 @@ authors = [
     { name = "davisbuilds" },
 ]
 dependencies = [
-    "numpy==2.4.4",
+    "numpy==2.4.6",
     "pyyaml==6.0.3",
-    "sentence-transformers==5.3.0",
-    "torch==2.11.0",
+    "sentence-transformers==5.6.0",
+    "torch==2.12.1",
 ]
 
 [project.scripts]
 mlsearch = "mlsearch.cli:main"
 
 [build-system]
-requires = ["hatchling==1.27.0"]
+requires = ["hatchling==1.30.1"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "pytest==9.0.2",
-    "ruff==0.15.12",
+    "pytest==9.1.1",
+    "ruff==0.15.20",
 ]
 
 [tool.pytest.ini_options]
