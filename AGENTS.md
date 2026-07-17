@@ -110,4 +110,5 @@ For benchmark-affecting changes, rerun the relevant eval commands and report abs
 - **Keep docs current.** After a significant change, PR, or completed spec/plan, update any now-stale reference docs under `docs/system/` (`ARCHITECTURE.md`, `BENCHMARK.md`, `TRAINING.md`) so they match shipped behavior. Skip this for trivial changes.
 - **Commit logically.** Commit completed work in coherent chunks as you proceed. Push only when explicitly asked.
 - **Log findings in `BACKLOG.md`.** Note design gaps, tech debt, or better approaches you spot mid-task in `docs/project/BACKLOG.md`; fix simple/quick ones inline and call them out.
+- **Use `tmux` for long-running work.** `mlsearch train` and `mlsearch experiment sweep` outlast a session and must survive disconnect/sleep; index builds over the full corpus are the same shape. Run them detached, keep the scrollback, and clean up the session afterward.
 - **Re-ground after compaction.** A compaction summary loses precise paths, context, and verification state — before continuing, re-read this project's `AGENTS.md`, its reference docs, and recent commits.
