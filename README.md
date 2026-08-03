@@ -126,6 +126,8 @@ tests/         pytest suite and fixtures
 - Benchmark workflow: [docs/system/BENCHMARK.md](docs/system/BENCHMARK.md)
 - Training and experiments: [docs/system/TRAINING.md](docs/system/TRAINING.md)
 - Operations: [docs/system/OPERATIONS.md](docs/system/OPERATIONS.md)
+- Roadmap: [docs/project/ROADMAP.md](docs/project/ROADMAP.md)
+- Backlog: [docs/project/BACKLOG.md](docs/project/BACKLOG.md)
 - Plans: [docs/plans/](docs/plans/)
 
 ## Current Boundaries
