@@ -10,4 +10,6 @@ Each entry: **What** / **Why or evidence** / optional **Next** / optional **Revi
 **Revisit when** only for an intentional external or measurable gate. Label an unmeasured
 causal claim as a hypothesis.
 
+## Open
+
 _No open items yet._
