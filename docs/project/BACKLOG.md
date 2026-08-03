@@ -5,7 +5,9 @@ execution. Fix simple, quick, or blocking issues inline; capture only durable fo
 worth revisiting cold. This is not a changelog or implementation plan — completed work
 graduates to `ROADMAP.md`, while enduring decisions belong in the owning system document.
 
-Each entry: **What** / **Why or evidence** / **Tradeoff** / **Recommendation or trigger** /
-**Status**. Label an unmeasured causal claim as a hypothesis.
+Each entry: **What** / **Why or evidence** / optional **Next** / optional **Revisit when** /
+**Status**. Use **Next** for the smallest action that makes an item actionable and
+**Revisit when** only for an intentional external or measurable gate. Label an unmeasured
+causal claim as a hypothesis.
 
 _No open items yet._
