@@ -7,7 +7,8 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from sentence_transformers import InputExample, SentenceTransformer, losses
+from sentence_transformers import InputExample, SentenceTransformer
+from sentence_transformers.sentence_transformer import losses
 from sentence_transformers.util import batch_to_device
 from torch.utils.data import DataLoader
 
