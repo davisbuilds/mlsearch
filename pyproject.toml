@@ -10,7 +10,7 @@ authors = [
 dependencies = [
     "numpy==2.4.6",
     "pyyaml==6.0.3",
-    "sentence-transformers==6.0.1",
+    "sentence-transformers==6.1.0",
     "torch==2.14.0",
 ]
 
@@ -18,13 +18,13 @@ dependencies = [
 mlsearch = "mlsearch.cli:main"
 
 [build-system]
-requires = ["hatchling==1.32.0"]
+requires = ["hatchling==1.32.4"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
     "pytest==9.1.1",
-    "ruff==0.16.7",
+    "ruff==0.16.8",
 ]
 
 [tool.pytest.ini_options]
