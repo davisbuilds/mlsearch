@@ -36,9 +36,14 @@ Every retained non-merge commit must use a Conventional Commit subject:
 (`docs`, `test`, `chore`, `build`, `ci`, `style`, `refactor`, `revert`, `perf`).
 PR and main-push CI validate commit subjects through `scripts/release-commits.cjs`; the PR title
 alone cannot repair retained commit history. Actual merge commits are exempt.
-The checker handles up to 250 PR or pushed commits; split larger changes. Main
-pushes must preserve history and an existing base; incomplete comparisons fail
-closed, so direct pushes cannot bypass release category validation.
+The PR checker handles up to 250 commits; split larger PRs. Main pushes must
+preserve history and an existing base. CI fetches complete history and validates
+every non-merge commit since the real `v<manifest version>` tag, or the configured
+bootstrap commit when that tag is absent. An earlier failed main push remains in
+this window; a later valid push cannot hide its unclassified commits. There is no
+250-commit cap on accumulated release history. Missing references or a baseline
+outside current ancestry fail closed. See release recovery before changing a
+baseline or already-published history.
 
 Use `!` or a `BREAKING CHANGE:` footer when consumers must migrate. Reviewers own
 that classification. [Release operations](../system/RELEASES.md) describe pre-1.0

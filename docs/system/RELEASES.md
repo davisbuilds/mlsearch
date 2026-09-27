@@ -13,8 +13,15 @@ installed distribution metadata, falling back to the source project's TOML when
 running an uninstalled checkout with `PYTHONPATH=src`. Release Please updates
 `pyproject.toml`, the `mlsearch` entry in `uv.lock`, its manifest, and `CHANGELOG.md`.
 
-PR and main-push CI validate categories (including direct pushes). Each retained
-non-merge commit needs a Conventional Commit subject:
+PR CI validates its own commits. Main-push CI fetches complete Git history, checks
+that the push preserves ancestry, and validates the full unreleased window from
+the real `v<manifest version>` tag (annotated or lightweight) to the tested head.
+If that tag is absent, it conservatively uses the configured bootstrap commit;
+this includes the interval after a release PR bumps the manifest but before its
+tag exists. Earlier failed pushes remain covered. Accumulated history has no
+250-commit limit, while the PR API check retains its 250-commit bound.
+
+Each retained non-merge commit needs a Conventional Commit subject:
 `type(scope): description` (scope optional). Use `feat` for a feature and `fix` or
 `perf` for a patch. A `!` or `BREAKING CHANGE:` footer declares incompatibility.
 Before 1.0, features and breaking changes bump the minor version; fixes and
@@ -55,7 +62,13 @@ and PR body comparison to `103e7c34aeea52a51905f3e2209b6d76d88362ae...v0.2.0`
 create a baseline tag to repair the link.
 
 If CI failed or its revision was superseded, fix/run CI for the current main
-revision; do not bypass the release gate. For credential failures, repair App
+revision; do not bypass the release gate. An unclassified commit already on main
+keeps later pushes blocked until an explicit maintainer recovery decision. Stop
+the release writer and review that commit's compatibility intent, version impact,
+and release notes. Do not silently reword published history or create a fake
+baseline tag to clear the gate. Any necessary baseline adjustment must be an
+explicitly reviewed decision documenting how the omitted changes are accounted
+for, followed by validation of the remaining history before resuming releases. For credential failures, repair App
 setup and rerun the failed release job only if its tested revision is still
 current. Inspect remote PR/tag/release state before retrying an ambiguous write.
 Disable the release workflow before manual recovery so there remains one writer;
