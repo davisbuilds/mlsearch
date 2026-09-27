@@ -1,6 +1,6 @@
 # Git History and Branch Hygiene
 
-Last updated: July 7, 2026
+Last updated: September 27, 2026
 
 ## Repository Merge Settings
 
@@ -33,12 +33,28 @@ is this repository's standing merge policy.
   Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
   ```
 
+## Commit Categories and Releases
+
+Every retained non-merge commit must use a Conventional Commit subject:
+`feat(search): add filter`, `fix: correct result ordering`, or a maintenance type
+(`docs`, `test`, `chore`, `build`, `ci`, `style`, `refactor`, `revert`, `perf`).
+PR CI validates commit subjects through `scripts/release-commits.cjs`; the PR title
+alone cannot repair retained commit history. Actual merge commits are exempt.
+The checker handles up to 250 PR commits; split larger changes.
+
+Use `!` or a `BREAKING CHANGE:` footer when consumers must migrate. Reviewers own
+that classification. [Release operations](../system/RELEASES.md) describe pre-1.0
+bumps and the generated release PR review gate. Generated release commits use
+`chore(main): release ...`; merging a release PR is a release decision.
+
 ## CI Gates
 
 GitHub Actions workflow: `.github/workflows/ci.yml` — a **lean gate** that deliberately skips the heavy test suite so CI never installs `torch`/`sentence-transformers`.
 
 Quality gates before merge (also the pre-push expectation locally):
 
+- Conventional Commit subjects on PRs (`Release commit categories`)
+- `node --test scripts/release-commits.test.cjs` locally
 - `uv run ruff check .`
 - `uv run ruff format --check .`
 - the dead-code test (ephemeral `uv run --no-project` env)

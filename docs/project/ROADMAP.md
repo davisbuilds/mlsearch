@@ -17,6 +17,11 @@ experiment surfaces are changed one at a time and judged mechanically on held-ou
 - **Useful local default** — the documented baseline-rerank path is the current
   trustworthy operating path unless a newer paper-disjoint evaluation beats it.
 
+- **Versioned source releases** — CI-gated Release Please proposes package/version
+  notes and publishes GitHub tags/releases after reviewed release PR merges;
+  runtime version provenance follows package metadata. Registry publication and
+  model promotion remain separate decisions.
+
 ## Current Operating Sequence
 
 1. Maintain the reviewed benchmark before broadening model or recipe work.

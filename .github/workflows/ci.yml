@@ -14,6 +14,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-commits:
+    name: Release commit categories
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test commit category validator
+        run: node --test scripts/release-commits.test.cjs
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            if (context.payload.pull_request.commits > 250) {
+              core.setFailed('Commit category check supports up to 250 PR commits; split this PR.');
+              return;
+            }
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              ...context.repo, pull_number: context.issue.number, per_page: 100
+            });
+            const { invalidCommits } = require('./scripts/release-commits.cjs');
+            const invalid = invalidCommits(commits);
+            if (invalid.length) {
+              core.setFailed(`${invalid.length} non-merge commit(s) need Conventional Commit subjects. See docs/project/GIT_HISTORY_POLICY.md.`);
+            }
+
   # Lean gate: ruff + the dead-code test only. Deliberately skips the full
   # pytest suite so CI never installs torch/sentence-transformers (~minutes,
   # heavy). The dead-code test is pure stdlib AST analysis, so it runs in an
