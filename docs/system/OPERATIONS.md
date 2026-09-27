@@ -37,7 +37,7 @@ Workflow: `.github/workflows/ci.yml`
 
 CI is intentionally lean:
 
-- PR commit subjects: Conventional Commit categories for every retained non-merge commit
+- PR and main-push commit subjects: Conventional Commit categories for every retained non-merge commit
 - `uvx ruff@0.15.12 check .`
 - `uvx ruff@0.15.12 format --check .`
 - `uv run --no-project --with pytest --python 3.12 python -m pytest -q tests/test_dead_code.py`

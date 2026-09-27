@@ -38,9 +38,11 @@ is this repository's standing merge policy.
 Every retained non-merge commit must use a Conventional Commit subject:
 `feat(search): add filter`, `fix: correct result ordering`, or a maintenance type
 (`docs`, `test`, `chore`, `build`, `ci`, `style`, `refactor`, `revert`, `perf`).
-PR CI validates commit subjects through `scripts/release-commits.cjs`; the PR title
+PR and main-push CI validate commit subjects through `scripts/release-commits.cjs`; the PR title
 alone cannot repair retained commit history. Actual merge commits are exempt.
-The checker handles up to 250 PR commits; split larger changes.
+The checker handles up to 250 PR or pushed commits; split larger changes. Main
+pushes must preserve history and an existing base; incomplete comparisons fail
+closed, so direct pushes cannot bypass release category validation.
 
 Use `!` or a `BREAKING CHANGE:` footer when consumers must migrate. Reviewers own
 that classification. [Release operations](../system/RELEASES.md) describe pre-1.0
@@ -53,7 +55,7 @@ GitHub Actions workflow: `.github/workflows/ci.yml` — a **lean gate** that del
 
 Quality gates before merge (also the pre-push expectation locally):
 
-- Conventional Commit subjects on PRs (`Release commit categories`)
+- Conventional Commit subjects on PRs and main pushes (`Release commit categories`)
 - `node --test scripts/release-commits.test.cjs` locally
 - `uv run ruff check .`
 - `uv run ruff format --check .`

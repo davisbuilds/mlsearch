@@ -13,7 +13,8 @@ installed distribution metadata, falling back to the source project's TOML when
 running an uninstalled checkout with `PYTHONPATH=src`. Release Please updates
 `pyproject.toml`, the `mlsearch` entry in `uv.lock`, its manifest, and `CHANGELOG.md`.
 
-Each retained non-merge commit needs a Conventional Commit subject:
+PR and main-push CI validate categories (including direct pushes). Each retained
+non-merge commit needs a Conventional Commit subject:
 `type(scope): description` (scope optional). Use `feat` for a feature and `fix` or
 `perf` for a patch. A `!` or `BREAKING CHANGE:` footer declares incompatibility.
 Before 1.0, features and breaking changes bump the minor version; fixes and

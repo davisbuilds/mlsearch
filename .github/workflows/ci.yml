@@ -16,7 +16,6 @@ concurrency:
 jobs:
   release-commits:
     name: Release commit categories
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -31,14 +30,8 @@ jobs:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            if (context.payload.pull_request.commits > 250) {
-              core.setFailed('Commit category check supports up to 250 PR commits; split this PR.');
-              return;
-            }
-            const commits = await github.paginate(github.rest.pulls.listCommits, {
-              ...context.repo, pull_number: context.issue.number, per_page: 100
-            });
-            const { invalidCommits } = require('./scripts/release-commits.cjs');
+            const { invalidCommits, commitsForEvent } = require('./scripts/release-commits.cjs');
+            const commits = await commitsForEvent(context, github);
             const invalid = invalidCommits(commits);
             if (invalid.length) {
               core.setFailed(`${invalid.length} non-merge commit(s) need Conventional Commit subjects. See docs/project/GIT_HISTORY_POLICY.md.`);
