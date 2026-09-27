@@ -18,8 +18,10 @@ that the push preserves ancestry, and validates the full unreleased window from
 the real `v<manifest version>` tag (annotated or lightweight) to the tested head.
 If that tag is absent, it conservatively uses the configured bootstrap commit;
 this includes the interval after a release PR bumps the manifest but before its
-tag exists. Earlier failed pushes remain covered. Accumulated history has no
-250-commit limit, while the PR API check retains its 250-commit bound.
+tag exists. Earlier failed pushes remain covered. Manifest versions must be valid
+SemVer 2.0.0 strings; malformed versions fail instead of selecting the bootstrap
+fallback. Accumulated history has no 250-commit limit, while the PR API check
+retains its 250-commit bound.
 
 Each retained non-merge commit needs a Conventional Commit subject:
 `type(scope): description` (scope optional). Use `feat` for a feature and `fix` or

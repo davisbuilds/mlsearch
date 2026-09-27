@@ -2,6 +2,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
 
+// SemVer 2.0.0 grammar: https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
+const numeric = '(?:0|[1-9][0-9]*)';
+const prerelease = `(?:${numeric}|[0-9]*[A-Za-z-][0-9A-Za-z-]*)`;
+const build = '[0-9A-Za-z-]+';
+const semver = new RegExp(
+  String.raw`^${numeric}\.${numeric}\.${numeric}` +
+  String.raw`(?:-${prerelease}(?:\.${prerelease})*)?` +
+  String.raw`(?:\+${build}(?:\.${build})*)?(?![\s\S])`
+);
+
 // Full commit history is preserved, so each non-merge commit needs a category.
 const conventional = /^(feat|fix|perf|docs|test|chore|build|ci|style|refactor|revert)(\([^\r\n()]+\))?!?: \S.*$/;
 
@@ -34,7 +44,7 @@ async function commitsForEvent(context, github, cwd = process.cwd()) {
   const manifest = JSON.parse(fs.readFileSync(path.join(cwd, '.release-please-manifest.json')));
   const configuration = JSON.parse(fs.readFileSync(path.join(cwd, 'release-please-config.json')));
   const version = manifest['.'];
-  if (typeof version !== 'string' || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version)) {
+  if (typeof version !== 'string' || !semver.test(version)) {
     throw new Error('Invalid release manifest version.');
   }
   const tag = `refs/tags/v${version}`;
