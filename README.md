@@ -114,7 +114,7 @@ and `eval compare`.
 ```text
 configs/       training and experiment configs
 data/          generated corpus, benchmark, index, and result artifacts
-docs/          system, project, and plan docs
+docs/          system and project docs
 src/           mlsearch package and CLI
 tests/         pytest suite and fixtures
 ```
@@ -128,7 +128,6 @@ tests/         pytest suite and fixtures
 - Operations: [docs/system/OPERATIONS.md](docs/system/OPERATIONS.md)
 - Roadmap: [docs/project/ROADMAP.md](docs/project/ROADMAP.md)
 - Backlog: [docs/project/BACKLOG.md](docs/project/BACKLOG.md)
-- Plans: [docs/plans/](docs/plans/)
 
 ## Current Boundaries
 
@@ -141,3 +140,7 @@ tests/         pytest suite and fixtures
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Contributing
+
+Focused contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).

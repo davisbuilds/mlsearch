@@ -58,7 +58,6 @@ configs/       User-editable YAML config
 data/          Local corpus and benchmark artifacts
 artifacts/     Indexes, checkpoints, reports, and result files
 docs/system/   Durable architecture, workflow, and operations docs
-docs/plans/    Brainstorms and implementation plans
 ```
 
 Do not spread new hard-coded repository paths through pipeline modules. Extend
