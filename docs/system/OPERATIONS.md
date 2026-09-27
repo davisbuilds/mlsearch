@@ -3,7 +3,7 @@
 ## Local Development
 
 ```bash
-uv sync --group dev
+uv sync --locked --group dev
 uv run mlsearch --help
 uv run ruff check .
 ```
@@ -37,6 +37,7 @@ Workflow: `.github/workflows/ci.yml`
 
 CI is intentionally lean:
 
+- PR and main-push commit subjects: Conventional Commit categories for every retained non-merge commit
 - `uvx ruff@0.15.12 check .`
 - `uvx ruff@0.15.12 format --check .`
 - `uv run --no-project --with pytest --python 3.12 python -m pytest -q tests/test_dead_code.py`
@@ -58,6 +59,12 @@ For benchmark-affecting changes, also rerun the relevant eval command and report
 absolute metrics. A passing unit suite is not enough evidence for model or benchmark
 quality changes.
 
+## Releases
+
+[Release operations](RELEASES.md) describe package version ownership, pre-1.0
+compatibility intent, the CI-gated Release Please workflow, App setup, and recovery.
+GitHub releases distribute source; there is no registry publishing or model upload.
+
 ## Artifact Locations
 
 - Corpus: `data/raw/`, `data/processed/`
@@ -75,7 +82,7 @@ indexes, or checkpoints to docs or source review unless explicitly requested.
 
 | Symptom | Check |
 | --- | --- |
-| `mlsearch --help` import error | Run `uv sync --group dev`; confirm command is run from the repo or via the installed environment. |
+| `mlsearch --help` import error | Run `uv sync --locked --group dev`; confirm command is run from the repo or via the installed environment. |
 | Full tests are slow | Expected. The suite imports ML dependencies; use targeted tests while iterating, then full pytest before handoff. |
 | CI passes but local pytest fails | Expected risk. CI deliberately skips heavy dependencies and most tests. Fix local failure before claiming completion. |
 | Eval compare refuses to run | Rebuild a baseline for the same split before comparing. |

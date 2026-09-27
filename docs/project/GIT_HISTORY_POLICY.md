@@ -1,6 +1,6 @@
 # Git History and Branch Hygiene
 
-Last updated: July 7, 2026
+Last updated: September 27, 2026
 
 ## Repository Merge Settings
 
@@ -27,11 +27,28 @@ is this repository's standing merge policy.
 
 - **Default — merge commit.** Preserves the PR as a discoverable boundary in `main`'s history. Best when the PR contains multiple meaningful commits worth keeping addressable individually.
 - **Rebase merge.** Use when the PR's commits are clean and the linear history reads better without an extra merge node. Avoid if the PR's commits are noisy (WIP, fixups) — clean them up locally first.
-- **Authoring expectation.** Because squash is gone, individual PR commits land in `main`. Keep PR commit messages tidy: meaningful subjects, no WIP markers, no fixup chains. Squash or reword locally before opening the PR if needed. End agent commit/PR messages with the co-author trailer:
+- **Authoring expectation.** Because squash is gone, individual PR commits land in `main`. Keep PR commit messages tidy: meaningful subjects, no WIP markers, no fixup chains. Squash or reword locally before opening the PR if needed. For agent-assisted work, name the actual assisting agent in the commit/PR co-author trailer. Use `Co-Authored-By: NAME <EMAIL>` with that agent's own attribution address.
 
-  ```
-  Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
-  ```
+## Commit Categories and Releases
+
+Every retained non-merge commit must use a Conventional Commit subject:
+`feat(search): add filter`, `fix: correct result ordering`, or a maintenance type
+(`docs`, `test`, `chore`, `build`, `ci`, `style`, `refactor`, `revert`, `perf`).
+PR and main-push CI validate commit subjects through `scripts/release-commits.cjs`; the PR title
+alone cannot repair retained commit history. Actual merge commits are exempt.
+The PR checker handles up to 250 commits; split larger PRs. Main pushes must
+preserve history and an existing base. CI fetches complete history and validates
+every non-merge commit since the real `v<manifest version>` tag, or the configured
+bootstrap commit when that tag is absent. An earlier failed main push remains in
+this window; a later valid push cannot hide its unclassified commits. There is no
+250-commit cap on accumulated release history. Missing references or a baseline
+outside current ancestry fail closed. See release recovery before changing a
+baseline or already-published history.
+
+Use `!` or a `BREAKING CHANGE:` footer when consumers must migrate. Reviewers own
+that classification. [Release operations](../system/RELEASES.md) describe pre-1.0
+bumps and the generated release PR review gate. Generated release commits use
+`chore(main): release ...`; merging a release PR is a release decision.
 
 ## CI Gates
 
@@ -39,6 +56,8 @@ GitHub Actions workflow: `.github/workflows/ci.yml` — a **lean gate** that del
 
 Quality gates before merge (also the pre-push expectation locally):
 
+- Conventional Commit subjects on PRs and main pushes (`Release commit categories`)
+- `node --test scripts/release-commits.test.cjs` locally
 - `uv run ruff check .`
 - `uv run ruff format --check .`
 - the dead-code test (ephemeral `uv run --no-project` env)

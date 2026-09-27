@@ -17,6 +17,7 @@ The important invariant is:
 - `docs/system/BENCHMARK.md` — benchmark inputs, generated artifacts, query types, review workflow, split rules, review heuristics.
 - `docs/system/TRAINING.md` — training path, device choice, config, commands, split discipline, sweep loop, rerank experiment.
 - `docs/system/OPERATIONS.md` — local setup, useful commands, lean CI, full local verification, artifact locations, troubleshooting.
+- `docs/system/RELEASES.md` — package version ownership, compatibility intent, CI-gated source releases, App setup, and recovery.
 - `docs/project/ROADMAP.md` — current direction, shipped foundation, and operating sequence.
 - `docs/project/BACKLOG.md` — future-only durable follow-ups.
 - `docs/plans/` — brainstorms and implementation plans.
@@ -98,7 +99,7 @@ uv run python -m pytest -q
 
 Prefer targeted test slices while iterating, then run the full suite before claiming completion.
 
-**CI runs a lean gate only** (`.github/workflows/ci.yml`): `ruff check`, `ruff format --check`, and the dead-code test — deliberately *no* full pytest suite, so CI never installs `torch`/`sentence-transformers`. The dead-code test runs in an ephemeral env (`uv run --no-project`) with no heavy deps. Consequence: **CI will not catch a failing `pytest` test**, so always run the full suite locally before claiming completion.
+**CI runs a lean gate only** (`.github/workflows/ci.yml`): PR/main-push Conventional Commit categories, `ruff check`, `ruff format --check`, and the dead-code test — deliberately *no* full pytest suite, so CI never installs `torch`/`sentence-transformers`. The dead-code test runs in an ephemeral env (`uv run --no-project`) with no heavy deps. Consequence: **CI will not catch a failing `pytest` test**, so always run the full suite locally before claiming completion.
 
 For benchmark-affecting changes, rerun the relevant eval commands and report absolute metrics, not just status labels.
 
