@@ -88,3 +88,30 @@ test('accumulated release history is not capped at 250 commits', async t => {
   const after = h.add('fix: latest change');
   assert.equal((await commitsForEvent(h.push(before,after),h.github,h.cwd)).length,252);
 });
+
+
+test('malformed manifest SemVer rejects instead of silently using bootstrap', async t => {
+  const h = history(t);
+  const after = h.add('fix: valid consumer change');
+  const invalid = ['01.2.3','1.02.3','1.2.03','1.2.3-01','1.2.3-alpha..beta',
+    '1.2.3+build..id','1.2.3-','1.2.3+','1.2.3\n','1.2.3-α','v1.2.3',null,123];
+  for (const version of invalid) {
+    fs.writeFileSync(path.join(h.cwd,'.release-please-manifest.json'),JSON.stringify({'.':version}));
+    await assert.rejects(commitsForEvent(h.push(h.bootstrap,after),{},h.cwd),
+      /Invalid release manifest version/, `reject ${JSON.stringify(version)}`);
+  }
+});
+
+test('valid SemVer retains bootstrap fallback and exact real-tag selection', async t => {
+  const h = history(t);
+  const released = h.add('Old released subject');
+  const after = h.add('fix: valid consumer change');
+  const versions = ['0.0.0','1.2.3','1.2.3-0','1.2.3-alpha.1','1.2.3-0alpha',
+    '1.2.3+01.build','1.2.3-alpha-1+build.01','1.2.3--'];
+  for (const version of versions) {
+    fs.writeFileSync(path.join(h.cwd,'.release-please-manifest.json'),JSON.stringify({'.':version}));
+    assert.equal(invalidCommits(await commitsForEvent(h.push(released,after),{},h.cwd)).length,1);
+    h.git('-c','tag.gpgsign=false','tag',`v${version}`,released);
+    assert.deepEqual(invalidCommits(await commitsForEvent(h.push(released,after),{},h.cwd)),[]);
+  }
+});
