@@ -73,7 +73,6 @@ GitHub releases distribute source; there is no registry publishing or model uplo
 - Indexes: `artifacts/index/`
 - Model checkpoints: `artifacts/models/`
 - Eval reports: `artifacts/results/`
-- Plans: `docs/plans/`
 
 Large generated artifacts are local working state. Do not add heavyweight corpora,
 indexes, or checkpoints to docs or source review unless explicitly requested.
