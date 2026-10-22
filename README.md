@@ -16,7 +16,8 @@ held-out eval splits). Python + uv + PyTorch + sentence-transformers; optimized 
 Apple Silicon. No secrets or API keys — everything runs locally.
 
 Do this, in order:
-1. Install deps. Ensure `uv` is installed (https://astral.sh/uv); run
+1. Install deps. Ensure `uv` 0.9.17 or later is installed (https://astral.sh/uv;
+   the 7-day `exclude-newer` release quarantine needs it); run
    `uv sync --group dev` from the repo root. Clone
    https://github.com/davisbuilds/mlsearch.git and cd in first if needed.
 2. Verify the CLI is wired up WITHOUT downloading anything heavy: run
