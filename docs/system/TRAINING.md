@@ -100,3 +100,25 @@ When model, depth, or champion claims change, update docs with the eval command 
 absolute metrics that justify the change. Avoid leaving stale "best known" claims
 without evidence.
 
+## Recorded Champion Findings
+
+Recorded on 2026-04-09 (moved here from `AGENTS.md`; no absolute metrics were
+kept with them). Re-establish them on the current reviewed splits before relying
+on them; `results.tsv` rows marked `keep` record champion runs.
+
+- First-stage champion checkpoint: `retriever-20260404T225128Z`, unless a newer
+  evaluated run beats it on the current held-out eval.
+- On the expanded 50-query blind `test` split, the strongest known end-to-end
+  setup was the zero-shot `BAAI/bge-small-en-v1.5` retriever with the
+  `cross-encoder/ms-marco-MiniLM-L-6-v2` reranker at `rerank_depth=10` (the CLI
+  defaults). `rerank_depth=5` was not enough, and
+  `cross-encoder/ms-marco-TinyBERT-L-2-v2` was close but measurably worse.
+- With paper-disjoint training enforced, `eval baseline-rerank` and
+  `search --rerank` are the most trustworthy default path unless a newer
+  paper-disjoint fine-tuned retriever clearly beats them.
+- `question_prefix_augmentation` and `hard_query_pattern_weighting` are
+  experiment knobs, not champions by default.
+- If `Recall@10` is saturated while MRR and nDCG have headroom, reranking is
+  usually the highest-leverage next step. Benchmark changes still have more
+  leverage than broad recipe churn.
+

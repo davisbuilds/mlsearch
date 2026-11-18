@@ -67,6 +67,12 @@ Prefer human-plausible search intent over title restatement:
 - Remove generic hype words unless a researcher would likely type them.
 - Reject only when the query is genuinely misleading or implausible as a search.
 
+The generator still tends to emit title-shaped or clipped queries. Example edits:
+
+- `spatio temporal spot forecasting framework` -> `traffic prediction frameworks`
+- `papers on subgroup performance analysis asr models` -> `ASR models performance analysis`
+- `work on contextual preference collaborative measure framework` -> `preference modeling with belief systems`
+
 ## Evaluation Consumers
 
 The finalized JSONL files are the reviewed artifacts used by:
