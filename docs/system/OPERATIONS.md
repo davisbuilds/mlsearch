@@ -38,12 +38,14 @@ Workflow: `.github/workflows/ci.yml`
 CI is intentionally lean:
 
 - PR and main-push commit subjects: Conventional Commit categories for every retained non-merge commit
-- `uvx ruff@0.15.12 check .`
-- `uvx ruff@0.15.12 format --check .`
-- `uv run --no-project --with pytest --python 3.12 python -m pytest -q tests/test_dead_code.py`
+- `uv sync --locked --only-group dev` (installs only the locked dev group: Ruff and pytest)
+- `uv run --no-sync ruff check .`
+- `uv run --no-sync ruff format --check .`
+- `uv run --no-sync python -m pytest -q tests/test_dead_code.py`
 
-CI does not install Torch or sentence-transformers and does not run the full pytest
-suite. Run the full local suite before claiming behavioral changes are complete.
+CI uses the same locked Ruff and pytest versions as local `uv run`. It does not install
+the project, Torch, or sentence-transformers and does not run the full pytest suite.
+Run the full local suite before claiming behavioral changes are complete.
 
 ## Local Verification
 
