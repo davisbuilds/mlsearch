@@ -1,130 +1,98 @@
 # AGENTS.md
 
-Guidance for agents working in `mlsearch`.
-
-## Project Intent
-
 MLSearch is a benchmark-first local retrieval project for arXiv `cs.LG` papers.
-
-The important invariant is:
-- keep corpus and reviewed eval logic fixed
-- mutate only narrow retrieval, training, and experiment surfaces
-- judge changes mechanically on the reviewed held-out eval
+Keep the corpus and reviewed eval logic fixed, mutate only narrow retrieval,
+training, and experiment surfaces, and judge changes mechanically on the
+reviewed held-out eval.
 
 ## Documentation Map
 
-- `CONTRIBUTING.md` — contribution scope, review expectations, and delivery policy.
-- `docs/system/ARCHITECTURE.md` — project intent, runtime shape, CLI routing, path model, config, data/artifact boundaries, design principles.
-- `docs/system/BENCHMARK.md` — benchmark inputs, generated artifacts, query types, review workflow, split rules, review heuristics.
-- `docs/system/TRAINING.md` — training path, device choice, config, commands, split discipline, sweep loop, rerank experiment.
-- `docs/system/OPERATIONS.md` — local setup, useful commands, lean CI, full local verification, artifact locations, troubleshooting.
-- `docs/system/RELEASES.md` — package version ownership, compatibility intent, CI-gated source releases, App setup, and recovery.
-- `docs/project/ROADMAP.md` — current direction, operating sequence, and product boundaries.
-- `docs/project/BACKLOG.md` — future-only durable follow-ups.
+- `CONTRIBUTING.md` — contribution scope, review expectations, delivery policy.
+- `docs/system/ARCHITECTURE.md` — runtime shape, CLI routing, path model,
+  config, data and artifact boundaries.
+- `docs/system/BENCHMARK.md` — benchmark artifacts, review workflow, split
+  rules, review heuristics.
+- `docs/system/TRAINING.md` — training path, sweep loop, reranking, recorded
+  champion findings.
+- `docs/system/OPERATIONS.md` — setup, lean CI, local verification, troubleshooting.
+- `docs/system/RELEASES.md` — version ownership and CI-gated source releases.
+- `docs/project/ROADMAP.md`, `BACKLOG.md` — direction and future-only follow-ups.
+- `docs/project/GIT_HISTORY_POLICY.md` — merge strategy and commit subjects.
 
-Run `uv run mlsearch --help` to list all CLI commands (`corpus`, `benchmark`, `index`, `eval`, `train`, `experiment`, `search`).
+## Benchmark and Experiment Invariants
 
-## Core Workflow
-
-1. Build or validate the local corpus.
-2. Generate synthetic query candidates.
-3. Review a small batch into the held-out eval.
-4. Run baseline retrieval.
-5. Run retriever training and compare against the reviewed eval.
-6. Optionally run second-stage reranking experiments.
-
-Prefer preserving this order. Do not change benchmark generation and model recipes in the same step unless the user explicitly asks for that coupling.
-
-## Benchmark Rules
-
-- `data/benchmark/reviewed/held_out_eval.jsonl` is the `dev` reviewed eval split.
-- `data/benchmark/reviewed/held_out_eval_test.jsonl` is the `test` reviewed eval split.
-- Reviewed queries must never leak into training.
-- `benchmark sample-review` now excludes previously reviewed query ids and source paper ids by default.
-- Use `--split dev` for the working benchmark and `--split test` for blind expansion.
-- `benchmark finalize-review` merges the current reviewed batch into the existing split instead of replacing it.
-- If you need to revisit old rows intentionally, use `benchmark sample-review --include-reviewed`.
-- Treat all reviewed splits as paper-disjoint from training: if a paper appears in any held-out split, generated queries for that paper should not be used for training.
-
-## Review Heuristics
-
-The generator is no longer producing nonsense, but it still tends to emit queries that are too title-shaped or clipped.
-
-When reviewing:
-- prefer human-plausible intent over title restatement
-- broaden slightly rather than copying the paper title
-- keep one strong domain anchor
-- remove catchy or branded phrasing like `one day`, `enhancing`, `framework`, `insight-driven` unless a user would likely search for it
-- reject only when the query is genuinely misleading or not something a researcher would type
-
-Good edits usually look like:
-- title-shaped phrase -> shorter intent phrase
-- clipped title shards -> application or task phrasing
-- awkward question wrapper -> clean keyword search
-
-Examples of good directions:
-- `spatio temporal spot forecasting framework` -> `traffic prediction frameworks`
-- `papers on subgroup performance analysis asr models` -> `ASR models performance analysis`
-- `work on contextual preference collaborative measure framework` -> `preference modeling with belief systems`
-
-## Training Notes
-
-- The current best first-stage retriever checkpoint is `retriever-20260404T225128Z` unless newer evaluated results explicitly beat it on the current held-out eval.
-- `question_prefix_augmentation` is useful as an experiment surface, but it is not automatically a new champion just because it beats the zero-shot baseline.
-- `hard_query_pattern_weighting` is available as an optional experiment knob. Treat it as experimental unless it clearly beats the current incumbent.
-- When comparing candidate runs, use the reviewed held-out eval and keep champion semantics explicit. Be careful not to confuse “beats baseline” with “beats incumbent.”
-- The current benchmark is large enough that simple hyperparameter sweeps are informative, but benchmark changes still have more leverage than broad recipe churn.
-
-## Reranking Notes
-
-- Use reranking only after verifying the retriever already has strong recall.
-- The current reranker path is a second-stage experiment over the retriever shortlist, not a retriever replacement.
-- If `Recall@10` is already saturated and `MRR`/`nDCG` still have headroom, reranking is usually the highest-leverage next step.
-- The strongest current end-to-end system is validated on the paper-disjoint blind `test` split, not just `dev`.
-- As of the expanded `50`-query blind `test` split, the strongest known setup is:
-  - zero-shot baseline retriever over `BAAI/bge-small-en-v1.5`
-  - reranker `cross-encoder/ms-marco-MiniLM-L-6-v2`
-  - `rerank_depth=10`
-- `rerank_depth=5` is not enough on the current blind split, and `cross-encoder/ms-marco-TinyBERT-L-2-v2` is close but still measurably worse than the default reranker.
-- After enforcing paper-disjoint held-out training, treat `eval baseline-rerank` and `search --rerank` as the most trustworthy default path unless a newer paper-disjoint fine-tuned retriever clearly beats them.
+- **Workflow order:** corpus, synthetic query candidates, review a small batch
+  into the held-out eval, baseline retrieval, retriever training, then optional
+  reranking. Do not change benchmark generation and model recipes in the same
+  step unless the user explicitly asks for that coupling.
+- **Reviewed queries never leak into training.** The `dev`
+  (`data/benchmark/reviewed/held_out_eval.jsonl`) and `test`
+  (`held_out_eval_test.jsonl`) splits are paper-disjoint from training: no
+  generated query for a held-out paper is used to train. Use `dev` for tuning
+  and `test` for blind checks.
+- **Reviewed splits are gitignored local data.** A clone without them cannot
+  run evals; say so instead of claiming an eval result.
+- **Keep champion semantics explicit.** "Beats baseline" is not "beats
+  incumbent". Rerank only after first-stage recall is strong; reranking is a
+  second-stage experiment, not a retriever replacement.
+- **The eval is the real judge** for retrieval, ranking, and training changes.
+  Rerun the relevant eval and report absolute metrics; a passing unit test
+  shows only that the code runs.
 
 ## Verification
 
-Use:
+Local gate (pre-push):
 
 ```bash
+node --test scripts/release-commits.test.cjs
 uv run ruff check .
+uv run ruff format --check .
 uv run python -m pytest -q
+python3 scripts/check_publication_hygiene.py
 ```
 
-Prefer targeted test slices while iterating, then run the full suite before claiming completion.
+**CI is lean and never runs the full pytest suite**, so it cannot catch a
+failing test: it runs the commit-category check, ruff (`uvx ruff@0.15.12`, not
+the locked dev version), the dead-code test, and the publication-hygiene scan.
+Green CI does not mean tests passed; run the full suite locally and record the
+result in the PR. Use targeted test slices while iterating. The dead-code gate
+(`tests/test_dead_code.py`) takes intentional entries in `SYMBOL_EXCEPTIONS` /
+`MODULE_EXCEPTIONS` with a reason.
 
-**CI runs a lean gate only** (`.github/workflows/ci.yml`): PR/main-push Conventional Commit categories, `ruff check`, `ruff format --check`, and the dead-code test — deliberately *no* full pytest suite, so CI never installs `torch`/`sentence-transformers`. The dead-code test runs in an ephemeral env (`uv run --no-project`) with no heavy deps. Consequence: **CI will not catch a failing `pytest` test**, so always run the full suite locally before claiming completion.
+## Git
 
-For benchmark-affecting changes, rerun the relevant eval commands and report absolute metrics, not just status labels.
-
-- **TDD**: red/green for new features, major refactors, and large changes. The red step must fail for the behavior you're about to fix — a test that fails only because the symbol doesn't exist yet is a stub, not a red test; write the signature first, then a test that fails on the behavior. Skip the red step for code with no behavior to assert, and cover it after. For smaller edits, still run the relevant existing tests before wrapping up. **For retrieval/ranking/training changes the eval is the real judge** — a passing unit test says the code runs, not that the change is an improvement; rerun the relevant eval and report absolute metrics (above).
-- **Ruff** enforces style + small fixups (`E, F, I, B, UP, W, C4, SIM, ERA, RUF, PIE`); `ruff format` keeps formatting consistent. Fix violations the linter flags rather than restating rules here.
-- **Dead-code gate** (`tests/test_dead_code.py`): static checks for unused public symbols, orphaned modules, and unreachable code. It owns cross-file dead code; ruff `F`/`ERA` own within-file unused imports/locals and commented-out code. When a symbol/module is intentionally unreferenced (external API, framework-invoked), add it to `SYMBOL_EXCEPTIONS`/`MODULE_EXCEPTIONS` with a reason rather than silencing the test.
+Merge commit or rebase; squash is disabled. Every retained non-merge commit
+needs a Conventional Commit subject, which CI checks
+(`docs/project/GIT_HISTORY_POLICY.md`). Release Please owns versions and
+changelogs: merging its release PR creates a tag and GitHub Release, so that
+merge waits for the maintainer. Merging other PRs publishes source only. This
+repository is public; keep commits, PR text, and docs self-contained.
 
 ## Working Agreement
 
-- **Push back before building.** If a request is incoherent or self-contradictory, or a spec/plan is vague or skips key decisions, stop and interview me — ask clarifying questions and confirm intent before writing code or changing files. Don't guess at scope or comply silently. (Clear, well-scoped requests don't need this.)
-- **Use `tmux` for long-running work.** `mlsearch train` and `mlsearch experiment sweep` outlast a session and must survive disconnect/sleep; index builds over the full corpus are the same shape. Run them detached, keep the scrollback, and clean up the session afterward.
-- **Log durable follow-ups in `BACKLOG.md`.** Capture consequential design gaps,
-  tech debt, and better approaches in `docs/project/BACKLOG.md`; fix small or
-  blocking issues inline. Keep entries future-only, with evidence and a next step
-  or revisit trigger; date/source volatile claims or label hypotheses. The
-  capability-owning repo holds cross-repo detail. Agents can work directly from
-  entries; use issues for discussion or coordination with one detailed owner.
-  Reconcile affected entries as work lands; update `ROADMAP.md` when selected
-  direction changes, not as a shipment log.
-- **Keep docs current.** Update the owning reference when a change makes its contract, boundary, procedure, or direction inaccurate. Routine internal changes need no ceremonial doc edit.
+- **Clarify before building** when a request is vague, contradictory, or skips a
+  key decision; clear, well-scoped requests need no interview.
+- **Fix small issues now; backlog the rest.** Fix simple, quick, or blocking
+  issues in this repo as part of the current change and call them out. Record in
+  `docs/project/BACKLOG.md` only what can't be finished now or needs the
+  maintainer's decision; don't open a branch or PR just for a backlog entry.
+- **Keep docs current** when a change makes a documented contract, boundary,
+  procedure, or direction stale.
+- **Use `tmux` for long-running work.** `mlsearch train`,
+  `mlsearch experiment sweep`, and full-corpus index builds outlast a session
+  and must survive disconnect and sleep. Run them detached, keep the scrollback,
+  and clean up the session afterward.
 - **Plan and hand off work.** Reuse clear task context. Save planning docs when
   decisions, acceptance, or coordination need persistence. Leave a brief
   handoff only when needed to resume unfinished work. Commit shared docs and
   keep status current. Before archiving reviewed, completed docs in ignored
   `docs/archive/`, preserve lasting decisions and open work in maintained docs
   and repair links.
-- **Commit logically.** Commit completed work in coherent chunks as you proceed. Push only when explicitly asked.
-- **Re-ground after compaction.** A compaction summary loses precise paths, context, and verification state — before continuing, re-read this project's `AGENTS.md`, its reference docs, and recent commits.
+- **Commit and push.** Commit coherent chunks, staging by explicit path. Push
+  your task branch and open a PR once the work is complete and the local gate
+  passes; don't push directly to `main`.
+- **Merge** only under the standing merge authority in the maintainer's
+  workspace instructions, or when the maintainer asks. Without those
+  instructions in context, leave the PR for the maintainer.
+- **Re-ground after compaction** in source, this file, the owning docs, and
+  recent commits. A summary and your own earlier proposals are not user approval.
