@@ -52,8 +52,8 @@ python3 scripts/check_publication_hygiene.py
 ```
 
 **CI is lean and never runs the full pytest suite**, so it cannot catch a
-failing test: it runs the commit-category check, ruff (`uvx ruff@0.15.12`, not
-the locked dev version), the dead-code test, and the publication-hygiene scan.
+failing test: it runs the commit-category check, the locked dev-group ruff, the
+dead-code test, and the publication-hygiene scan.
 Green CI does not mean tests passed; run the full suite locally and record the
 result in the PR. Use targeted test slices while iterating. The dead-code gate
 (`tests/test_dead_code.py`) takes intentional entries in `SYMBOL_EXCEPTIONS` /
