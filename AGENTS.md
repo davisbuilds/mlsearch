@@ -88,6 +88,9 @@ repository is public; keep commits, PR text, and docs self-contained.
   keep status current. Before archiving reviewed, completed docs in ignored
   `docs/archive/`, preserve lasting decisions and open work in maintained docs
   and repair links.
+- **TDD:** red/green for features, major refactors and large changes; the red
+  test must fail on the behavior, not on a missing symbol. For smaller edits, run
+  the relevant existing checks.
 - **Commit and push.** Commit coherent chunks, staging by explicit path. Push
   your task branch and open a PR once the work is complete and the local gate
   passes; don't push directly to `main`.
