@@ -10,6 +10,6 @@
     "scripts/check_publication_hygiene.py": 4,
     "scripts/release-commits.cjs": 3,
     "src/mlsearch/__init__.py": 1,
-    "tests/test_dead_code.py": 29
+    "tests/test_dead_code.py": 27
   }
 }
