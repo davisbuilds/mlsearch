@@ -38,7 +38,7 @@ jobs:
               core.setFailed(`${invalid.length} non-merge commit(s) need Conventional Commit subjects. See docs/project/GIT_HISTORY_POLICY.md.`);
             }
 
-  # Lean gate: ruff + the dead-code test only. Deliberately skips the full
+  # Lean gate: ruff, the dead-code test and the comment ratchet. Skips the full
   # pytest suite so CI never installs torch/sentence-transformers (~minutes,
   # heavy). Only the locked dev group (ruff, pytest) is installed, so CI runs
   # the same ruff and pytest versions as `uv run` locally. The dead-code test
@@ -75,3 +75,6 @@ jobs:
 
       - name: Dead-code gate
         run: uv run --no-sync python -m pytest -q tests/test_dead_code.py
+
+      - name: Comment ratchet
+        run: python3 scripts/check_comments.py

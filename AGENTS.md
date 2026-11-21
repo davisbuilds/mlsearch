@@ -49,11 +49,12 @@ uv run ruff check .
 uv run ruff format --check .
 uv run python -m pytest -q
 python3 scripts/check_publication_hygiene.py
+python3 scripts/check_comments.py
 ```
 
 **CI is lean and never runs the full pytest suite**, so it cannot catch a
 failing test: it runs the commit-category check, the locked dev-group ruff, the
-dead-code test, and the publication-hygiene scan.
+dead-code test, the comment ratchet, and the publication-hygiene scan.
 Green CI does not mean tests passed; run the full suite locally and record the
 result in the PR. Use targeted test slices while iterating. The dead-code gate
 (`tests/test_dead_code.py`) takes intentional entries in `SYMBOL_EXCEPTIONS` /
@@ -91,6 +92,12 @@ repository is public; keep commits, PR text, and docs self-contained.
 - **TDD:** red/green for features, major refactors and large changes; the red
   test must fail on the behavior, not on a missing symbol. For smaller edits, run
   the relevant existing checks.
+- **Comments.** Don't add code comments. The one exception is a decision record:
+  start it with `WHY:` and state a non-obvious reason the code can't express.
+  Never justify a shortcut in a comment; fix it or record it in
+  `docs/project/BACKLOG.md`. `python3 scripts/check_comments.py` enforces a
+  ratchet: after deleting comments run it with `--update`, and never raise a count
+  in `.comment-baseline.json`.
 - **Commit and push.** Commit coherent chunks, staging by explicit path. Push
   your task branch and open a PR once the work is complete and the local gate
   passes; don't push directly to `main`.
