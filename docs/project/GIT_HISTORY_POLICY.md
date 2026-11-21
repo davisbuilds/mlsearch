@@ -60,7 +60,8 @@ Quality gates before merge (also the pre-push expectation locally):
 - `node --test scripts/release-commits.test.cjs` locally
 - `uv run ruff check .`
 - `uv run ruff format --check .`
-- the dead-code test (ephemeral `uv run --no-project` env)
+- the dead-code test (`uv run --no-sync` with only the locked dev group installed)
+- `python3 scripts/check_comments.py` (comment ratchet)
 
 CI does **not** run the full `pytest` suite — always run `uv run pytest -q` locally before claiming completion.
 
