@@ -42,6 +42,7 @@ CI is intentionally lean:
 - `uv run --no-sync ruff check .`
 - `uv run --no-sync ruff format --check .`
 - `uv run --no-sync python -m pytest -q tests/test_dead_code.py`
+- `python3 scripts/check_comments.py` (comment ratchet, stdlib only)
 
 CI uses the same locked Ruff and pytest versions as local `uv run`. It does not install
 the project, Torch, or sentence-transformers and does not run the full pytest suite.
@@ -55,7 +56,12 @@ Use this before pushing routine changes:
 uv run ruff check .
 uv run ruff format --check .
 uv run python -m pytest -q
+python3 scripts/check_comments.py
 ```
+
+`scripts/check_comments.py` is a comment ratchet: it fails when a file gains
+disallowed comment lines over `.comment-baseline.json`, and asks for `--update`
+after comments are deleted.
 
 For benchmark-affecting changes, also rerun the relevant eval command and report
 absolute metrics. A passing unit suite is not enough evidence for model or benchmark
