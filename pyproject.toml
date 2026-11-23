@@ -39,12 +39,12 @@ target-version = "py311"
 select = ["E", "F", "I", "B", "UP", "W", "C4", "SIM", "ERA", "RUF", "PIE"]
 
 [tool.ruff.lint.per-file-ignores]
-# Test fixtures embed long realistic data (arXiv XML feeds, paper titles, query
+# WHY: test fixtures embed long realistic data (arXiv XML feeds, paper titles, query
 # strings) that must stay byte-accurate; wrapping them would corrupt the fixture.
 "tests/**" = ["E501"]
 
 [tool.uv]
-# Supply-chain quarantine: ignore distributions uploaded in the last 7 days.
+# WHY: supply-chain quarantine ignores distributions uploaded in the last 7 days.
 # For an urgent fix, override one package with exclude-newer-package.
 exclude-newer = "7 days"
 default-groups = ["dev"]

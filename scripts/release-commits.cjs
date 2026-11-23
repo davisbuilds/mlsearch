@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
 
-// SemVer 2.0.0 grammar: https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
+// WHY: follows the SemVer 2.0.0 grammar: https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
 const numeric = '(?:0|[1-9][0-9]*)';
 const prerelease = `(?:${numeric}|[0-9]*[A-Za-z-][0-9A-Za-z-]*)`;
 const build = '[0-9A-Za-z-]+';
@@ -12,7 +12,7 @@ const semver = new RegExp(
   String.raw`(?:\+${build}(?:\.${build})*)?(?![\s\S])`
 );
 
-// Full commit history is preserved, so each non-merge commit needs a category.
+// WHY: full commit history is preserved, so each non-merge commit needs a category.
 const conventional = /^(feat|fix|perf|docs|test|chore|build|ci|style|refactor|revert)(\([^\r\n()]+\))?!?: \S.*$/;
 
 function invalidCommits(commits) {
@@ -57,7 +57,7 @@ async function commitsForEvent(context, github, cwd = process.cwd()) {
     throw new Error('A real release tag or configured bootstrap commit is required.');
   }
   git('merge-base', '--is-ancestor', baseline, after);
-  // Check the entire unreleased window, including earlier failed main pushes.
+  // WHY: check the entire unreleased window, including earlier failed main pushes.
   const records = git('log', '--format=%H%x00%P%x00%s%x00', `${baseline}..${after}`);
   if (!records) return [];
   const fields = records.split('\0');

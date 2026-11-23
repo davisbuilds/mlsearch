@@ -32,42 +32,35 @@ import ast
 import re
 from pathlib import Path
 
-# ─── Configuration (per-project) ───────────────────────────────────────────
-
 ROOT = Path(__file__).resolve().parents[1]
 
-# This project uses a src/<package>/ layout, so module names are computed
-# relative to src/ (-> "mlsearch.cli") and the first-party import prefix is the
-# package name, not "src".
+# WHY: src/<package>/ layout, so module names are computed relative to src/
+# (-> "mlsearch.cli") and the first-party import prefix is the package name, not "src".
 SRC_DIR = ROOT / "src" / "mlsearch"
 MODULE_BASE = ROOT / "src"
 IMPORT_ROOT = "mlsearch"
 
-# Directories scanned for *references* in addition to source: any place a
-# symbol might legitimately be used. .py files are parsed (AST); other files
-# are searched as text so symbols used only in configs aren't flagged.
+# WHY: references can live outside Python. .py files are parsed (AST); other
+# files are searched as text so symbols used only in configs aren't flagged.
 REFERENCE_PY_DIRS = [SRC_DIR, ROOT / "tests"]
 REFERENCE_TEXT_FILES = [ROOT / "pyproject.toml", *(ROOT / "configs").glob("*.yaml")]
 
 SKIP_DIR_NAMES = {"__pycache__", ".venv", ".git", ".mypy_cache", ".ruff_cache"}
 
-# Modules invoked via console-scripts / frameworks, never imported by name.
 MODULE_EXCEPTIONS = {
-    "mlsearch.cli",  # console_scripts entry point (mlsearch.cli:main)
+    "mlsearch.cli",  # WHY: console_scripts entry point (mlsearch.cli:main)
 }
 
-# Public symbols intentionally unreferenced internally (external API, reflection,
-# etc.). Format: "module::name". Document *why* on each line.
+# WHY: public symbols intentionally unreferenced internally (external API,
+# reflection). Format: "module::name", with the reason on each line.
 SYMBOL_EXCEPTIONS: set[str] = set()
 
-# Decorator attribute names that mark a function as framework-invoked and thus
-# legitimately never imported by name (Typer/Click commands). The CLI here is
-# argparse-based, so this is currently inert — kept for template parity.
+# WHY: Typer/Click decorators mark functions invoked by the framework. The CLI here
+# is argparse-based, so this is inert; it stays to match the shared template.
 FRAMEWORK_DECORATORS = {"command", "callback"}
 
-MIN_NAME_LEN = 4  # shorter identifiers have a high false-positive rate
+MIN_NAME_LEN = 4  # WHY: shorter identifiers have a high false-positive rate
 
-# Per-check toggles.
 CHECK_UNUSED_SYMBOLS = True
 CHECK_ORPHANED_MODULES = True
 CHECK_UNREACHABLE = True
@@ -82,7 +75,7 @@ def _iter_py_files(root: Path) -> list[Path]:
 
 
 def _module_name(path: Path) -> str:
-    # Source files live under MODULE_BASE; importer files (e.g. tests/) may not,
+    # WHY: source files live under MODULE_BASE; importer files (e.g. tests/) may not,
     # so fall back to a ROOT-relative dotted name. The result is only used as the
     # base for resolving relative imports, which cross-tree importers don't make.
     try:
@@ -97,9 +90,6 @@ def _module_name(path: Path) -> str:
 
 def _source_modules() -> dict[str, Path]:
     return {_module_name(p): p for p in _iter_py_files(SRC_DIR)}
-
-
-# ─── Symbol & reference extraction (AST) ────────────────────────────────────
 
 
 def _is_framework_decorated(node: ast.AST) -> bool:
@@ -143,9 +133,6 @@ def _loaded_names(path: Path) -> set[str]:
         elif isinstance(node, ast.Attribute):
             names.add(node.attr)
     return names
-
-
-# ─── Import resolution (orphaned-module check) ──────────────────────────────
 
 
 def _resolve_import_from(
@@ -198,8 +185,6 @@ def _imported_modules(path: Path, modules: dict[str, Path]) -> set[str]:
     return imported
 
 
-# ─── Unreachable-code detection (AST) ───────────────────────────────────────
-
 _TERMINALS = (ast.Return, ast.Raise, ast.Break, ast.Continue)
 
 
@@ -236,10 +221,9 @@ def test_no_unused_public_symbols() -> None:
                 continue
             if f"{module}::{name}" in SYMBOL_EXCEPTIONS:
                 continue
-            # A symbol is alive if any module loads it — including its own, since
-            # the definition statement itself is not a load. Dead = never read
-            # anywhere. (Conservative: shared names mask deadness but never cause
-            # a live symbol to be flagged.)
+            # WHY: a symbol is alive if any module loads it, including its own, since
+            # the definition statement itself is not a load. Conservative: shared names mask
+            # deadness but never cause a live symbol to be flagged.
             if any(name in names for names in loaded_by_file.values()):
                 continue
             if re.search(rf"\b{re.escape(name)}\b", text_corpus):
@@ -273,7 +257,7 @@ def test_no_orphaned_modules() -> None:
         for module, refs in sorted(incoming.items())
         if refs == 0
         and module not in MODULE_EXCEPTIONS
-        and modules[module].name != "__init__.py"  # packages aggregate, don't originate
+        and modules[module].name != "__init__.py"  # WHY: packages aggregate, don't originate
     ]
 
     if orphaned:

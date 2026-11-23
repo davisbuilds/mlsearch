@@ -8,7 +8,7 @@ __all__ = ["__version__"]
 try:
     __version__ = version("mlsearch")
 except PackageNotFoundError:
-    # Support PYTHONPATH=src and source-only test runs before installation.
+    # WHY: supports PYTHONPATH=src and source-only test runs before installation.
     import tomllib
 
     with (Path(__file__).resolve().parents[2] / "pyproject.toml").open("rb") as project:
